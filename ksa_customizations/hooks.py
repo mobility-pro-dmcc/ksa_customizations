@@ -44,7 +44,7 @@ app_license = "mit"
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+# doctype_list_js = {"Delivery Note" : "public/js/delivery_note_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -137,13 +137,15 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	# "Sales Invoice": {
+    #     "on_submit": "ksa_customizations.server_script.sales_invoice.on_submit",
+    #     "on_cancel": "ksa_customizations.server_script.sales_invoice.on_cancel",
+    # },
+    "Payment Entry": {
+        "on_submit": "ksa_customizations.server_script.payment_entry.on_submit",
+    }
+}
 
 # Scheduled Tasks
 # ---------------
