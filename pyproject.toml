@@ -8,7 +8,7 @@ requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]
 dependencies = [
-    # "frappe~=15.0.0" # Installed and managed by bench.
+    "mobility_customizations @ git+https://github.com/mobility-pro-dmcc/mobility_customizations.git"
 ]
 
 [build-system]
