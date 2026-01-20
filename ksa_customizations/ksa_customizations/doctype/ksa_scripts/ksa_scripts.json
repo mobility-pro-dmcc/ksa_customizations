@@ -1,0 +1,51 @@
+{
+ "actions": [],
+ "autoname": "format: KSA-WRAP-{#####}",
+ "creation": "2026-01-01 16:52:17.941719",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "method",
+  "column_break_gzun",
+  "disabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "method",
+   "fieldtype": "Data",
+   "label": "Method"
+  },
+  {
+   "fieldname": "column_break_gzun",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled"
+  }
+ ],
+ "grid_page_length": 50,
+ "in_create": 1,
+ "links": [],
+ "modified": "2026-01-01 17:15:33.828919",
+ "modified_by": "Administrator",
+ "module": "Ksa Customizations",
+ "name": "KSA Scripts",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "method"
+}

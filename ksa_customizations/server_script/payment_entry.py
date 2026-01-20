@@ -1,10 +1,10 @@
 import frappe
 import time
-import mobility_customizations as mc 
+import ksa_customizations as kc 
 from erpnext.accounts.doctype.payment_entry.payment_entry import get_outstanding_reference_documents
 from ksa_customizations.api import trigger_reconciliation_for_queued_docs
 
-@mc.wrap_script()
+@kc.wrap_script()
 def auto_reconcile_after_payment_entry_submit(doc):
     """ Script: Auto-Reconciliation After Payment Entry Submission """
     time.sleep(15)

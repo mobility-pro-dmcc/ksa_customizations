@@ -1,5 +1,5 @@
 import frappe
-import mobility_customizations as mc
+import ksa_customizations as kc
 
 def _update_sales_order_billing_from_invoice(doc, is_cancel=False):
     """Update Sales Order Item.billed_qty and maybe close/reopen SO.
@@ -226,20 +226,20 @@ def _update_dn_billing_from_invoice(doc, is_cancel=False):
 
     return None
 
-@mc.wrap_script()
+@kc.wrap_script()
 def after_submit_sales_invoice_so(doc, method):
     _update_sales_order_billing_from_invoice(doc, is_cancel=False)
 
-@mc.wrap_script()
+@kc.wrap_script()
 def on_cancel_sales_invoice_so(doc, method):
     return _update_sales_order_billing_from_invoice(doc, is_cancel=True)
 
-@mc.wrap_script()
+@kc.wrap_script()
 def after_submit_sales_invoice_dn(doc, method):
     # called on_submit
     _update_dn_billing_from_invoice(doc, is_cancel=False)
 
-@mc.wrap_script()
+@kc.wrap_script()
 def on_cancel_sales_invoice_dn(doc, method):
     # called on_cancel – returns final DN.billing_status
     return _update_dn_billing_from_invoice(doc, is_cancel=True)
