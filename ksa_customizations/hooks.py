@@ -138,12 +138,22 @@ override_doctype_class = {
 # Hook on document methods and events
 
 doc_events = {
-	# "Sales Invoice": {
-    #     "on_submit": "ksa_customizations.server_script.sales_invoice.on_submit",
-    #     "on_cancel": "ksa_customizations.server_script.sales_invoice.on_cancel",
-    # },
+	"Sales Invoice": {
+        # "on_submit": "ksa_customizations.server_script.sales_invoice.on_submit",
+        # "on_cancel": "ksa_customizations.server_script.sales_invoice.on_cancel",
+        "validate": "ksa_customizations.server_script.sales_invoice.validate",
+    },
     "Payment Entry": {
         "on_submit": "ksa_customizations.server_script.payment_entry.on_submit",
+    },
+    "Sales Order": {
+        "validate": "ksa_customizations.server_script.sales_order.validate",
+    },
+    "Quotation": {
+        "validate": "ksa_customizations.server_script.quotation.validate",
+    },
+    "Delivery Note": {
+        "validate": "ksa_customizations.server_script.delivery_note.validate",
     }
 }
 
