@@ -1,5 +1,5 @@
 app_name = "ksa_customizations"
-app_title = "Ksa Customizations"
+app_title = "KSA Customizations"
 app_publisher = "Mobility Pro DMCC"
 app_description = "Customization for ATG"
 app_email = "info@mobilityp.com"
@@ -15,7 +15,7 @@ app_license = "mit"
 # 	{
 # 		"name": "ksa_customizations",
 # 		"logo": "/assets/ksa_customizations/logo.png",
-# 		"title": "Ksa Customizations",
+# 		"title": "KSA Customizations",
 # 		"route": "/ksa_customizations",
 # 		"has_permission": "ksa_customizations.api.permission.has_app_permission"
 # 	}
