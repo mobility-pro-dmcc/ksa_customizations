@@ -91,6 +91,10 @@ app_license = "mit"
 # before_uninstall = "ksa_customizations.uninstall.before_uninstall"
 # after_uninstall = "ksa_customizations.uninstall.after_uninstall"
 
+# Migration
+# ------------ 
+before_migrate = "ksa_customizations.before_migrate.Migration"
+
 # Integration Setup
 # ------------------
 # To set up dependencies/integrations with other apps
@@ -154,7 +158,10 @@ doc_events = {
     },
     "Delivery Note": {
         "validate": "ksa_customizations.server_script.delivery_note.validate",
-    }
+    },
+    "Customer": {
+        "on_update": "ksa_customizations.server_script.customer.on_update",
+    },
 }
 
 # Scheduled Tasks
