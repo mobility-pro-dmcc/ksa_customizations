@@ -4,3 +4,4 @@
 
 [post_model_sync]
 # ksa_customizations.patches.v15.add_custom_per_billed
+ksa_customizations.patches.v15.add_payment_transfer_request_fields

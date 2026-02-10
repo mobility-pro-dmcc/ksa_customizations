@@ -149,6 +149,7 @@ doc_events = {
     },
     "Payment Entry": {
         "on_submit": "ksa_customizations.server_script.payment_entry.on_submit",
+        "before_cancel": "ksa_customizations.server_script.payment_entry.before_cancel"
     },
     "Sales Order": {
         "validate": "ksa_customizations.server_script.sales_order.validate",
@@ -167,13 +168,13 @@ doc_events = {
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
+scheduler_events = {
 # 	"all": [
 # 		"ksa_customizations.tasks.all"
 # 	],
-# 	"daily": [
-# 		"ksa_customizations.tasks.daily"
-# 	],
+	"daily": [
+		"ksa_customizations.events.repost_item_valuation_for_zero_qty_stock_entries"
+	],
 # 	"hourly": [
 # 		"ksa_customizations.tasks.hourly"
 # 	],
@@ -183,7 +184,7 @@ doc_events = {
 # 	"monthly": [
 # 		"ksa_customizations.tasks.monthly"
 # 	],
-# }
+}
 
 # Testing
 # -------

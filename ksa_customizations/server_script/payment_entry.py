@@ -39,5 +39,16 @@ def auto_reconcile_after_payment_entry_submit(doc):
                 trigger_reconciliation_for_queued_docs()
     frappe.db.commit()
 
+def cancel_payment_transfer_request_on_payment_entry_cancel(doc, method=None):
+    if doc.custom_payment_transfer_request and not doc.flags.is_system_cancel:
+        ptr = frappe.get_doc("Payment Transfer Request", doc.custom_payment_transfer_request)
+        if ptr.docstatus == 1:
+            ptr.flags.ignore_permissions = True
+            ptr.flags.ignore_links = True
+            ptr.cancel()
+
 def on_submit(doc, method=None):
     frappe.enqueue(auto_reconcile_after_payment_entry_submit, doc=doc)
+
+def before_cancel(doc, method=None):
+    cancel_payment_transfer_request_on_payment_entry_cancel(doc)
