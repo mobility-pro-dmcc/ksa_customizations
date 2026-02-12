@@ -1,0 +1,82 @@
+{
+ "creation": "2025-12-08 15:39:05.784683",
+ "docstatus": 0,
+ "doctype": "Workflow",
+ "document_type": "Payment Transfer Request",
+ "edited_by": "User",
+ "idx": 0,
+ "is_active": 1,
+ "is_standard": 1,
+ "modified": "2026-02-12 15:03:07.712540",
+ "modified_by": "Administrator",
+ "module": "Ksa Customizations",
+ "name": "Payment Transfer Request",
+ "override_status": 0,
+ "owner": "ahmed.zaytoon@mobilityp.com",
+ "send_email_alert": 0,
+ "states": [
+  {
+   "allow_edit": "All",
+   "avoid_status_override": 0,
+   "doc_status": "0",
+   "is_optional_state": 0,
+   "send_email": 0,
+   "state": "Draft"
+  },
+  {
+   "allow_edit": "All",
+   "avoid_status_override": 0,
+   "doc_status": "0",
+   "is_optional_state": 0,
+   "send_email": 0,
+   "state": "Open"
+  },
+  {
+   "allow_edit": "All",
+   "avoid_status_override": 0,
+   "doc_status": "1",
+   "is_optional_state": 0,
+   "send_email": 0,
+   "state": "Completed"
+  },
+  {
+   "allow_edit": "All",
+   "avoid_status_override": 0,
+   "doc_status": "1",
+   "is_optional_state": 0,
+   "send_email": 0,
+   "state": "Discarded"
+  }
+ ],
+ "transitions": [
+  {
+   "action": "Send",
+   "allow_self_approval": 1,
+   "allowed": "All",
+   "condition": "doc.owner == frappe.session.user",
+   "next_state": "Open",
+   "send_email_to_creator": 0,
+   "state": "Draft"
+  },
+  {
+   "action": "Submit",
+   "allow_self_approval": 0,
+   "allowed": "All",
+   "condition": "frappe.session.user == frappe.db.get_value(\"Account\", doc.paid_to, \"custom_assigned_person\")",
+   "next_state": "Completed",
+   "send_email_to_creator": 0,
+   "state": "Open"
+  },
+  {
+   "action": "Reject",
+   "allow_self_approval": 0,
+   "allowed": "All",
+   "condition": "frappe.session.user == frappe.db.get_value(\"Account\", doc.paid_to, \"custom_assigned_person\")",
+   "next_state": "Discarded",
+   "send_email_to_creator": 0,
+   "state": "Open"
+  }
+ ],
+ "workflow_name": "Payment Transfer Request",
+ "workflow_state_field": "workflow_state"
+}
