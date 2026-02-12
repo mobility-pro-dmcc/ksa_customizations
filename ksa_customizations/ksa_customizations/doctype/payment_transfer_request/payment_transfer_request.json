@@ -106,7 +106,7 @@
    "ignore_user_permissions": 1,
    "in_global_search": 1,
    "label": "Account Paid To",
-   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Cash\"]]",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Cash\"],[\"Account\",\"custom_assigned_person\",\"is\",\"set\"]]",
    "options": "Account",
    "print_hide": 1,
    "reqd": 1
@@ -185,7 +185,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-10 10:44:29.158414",
+ "modified": "2026-02-12 11:44:11.492164",
  "modified_by": "Administrator",
  "module": "Ksa Customizations",
  "name": "Payment Transfer Request",
