@@ -13,7 +13,7 @@
  "is_hidden": 0,
  "label": "Transfer",
  "links": [],
- "modified": "2026-02-12 12:10:14.064792",
+ "modified": "2026-02-15 12:38:11.663220",
  "modified_by": "Administrator",
  "module": "Ksa Customizations",
  "name": "Transfer",
@@ -22,7 +22,14 @@
  "parent_page": "Selling",
  "public": 1,
  "quick_lists": [],
- "roles": [],
+ "roles": [
+  {
+   "role": "Sales Person"
+  },
+  {
+   "role": "Accounts Manager"
+  }
+ ],
  "sequence_id": 29.0,
  "shortcuts": [
   {
