@@ -67,3 +67,23 @@ class PaymentTransferRequest(Document):
 		if not old_doc or old_doc.workflow_state != self.workflow_state:
 			notif = frappe.get_doc("Notification", "Payment Transfer Request")
 			notif.send(self)
+	
+	@frappe.whitelist()
+	def get_cash_accounts_for_user(self):
+		user = frappe.session.user
+
+		# validate salesperson
+		is_sales = frappe.db.get_value("Contact", {"user": user}, "is_sales_person")
+
+		if not is_sales:
+			return []
+
+		return frappe.get_all(
+			"Account",
+			filters={
+				"custom_assigned_person": user,
+				"account_type": "Cash"
+			},
+			pluck="name",
+			ignore_permissions=True
+		)
