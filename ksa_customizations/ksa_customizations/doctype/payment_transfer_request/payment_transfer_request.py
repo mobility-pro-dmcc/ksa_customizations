@@ -47,7 +47,8 @@ class PaymentTransferRequest(Document):
 			payment_dict["custom_remarks"] = self.custom_remarks
 			payment_dict["remarks"] = self.remarks
 		payment_entry = frappe.get_doc(payment_dict)
-		payment_entry.insert(ignore_permissions=True)
+		payment_entry.flags.ignore_permissions=True
+		payment_entry.flags.ignore_accounts_permissions=True
 		payment_entry.submit()
 
 	def delete_payment_entry(self):

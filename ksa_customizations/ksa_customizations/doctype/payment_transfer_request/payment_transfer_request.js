@@ -11,7 +11,7 @@ frappe.ui.form.on("Payment Transfer Request", {
         frm.call("get_cash_accounts_for_user").then((r) => {
             let accounts = r.message || [];
 
-            if (accounts.length) {
+            if (accounts.length && frm.is_new()) {
                 frm.set_value("paid_from", accounts[0]);
             }
             
