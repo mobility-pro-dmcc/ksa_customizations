@@ -134,7 +134,8 @@ before_migrate = "ksa_customizations.before_migrate.Migration"
 # Override standard doctype classes
 
 override_doctype_class = {
-	"Payment Reconciliation": "ksa_customizations.overrides.payment_reconciliation.CustomPaymentReconciliation"
+	"Payment Reconciliation": "ksa_customizations.overrides.payment_reconciliation.CustomPaymentReconciliation",
+    "Payment Entry": "ksa_customizations.overrides.payment_entry.CustomPaymentEntry"
 }
 
 # Document Events
