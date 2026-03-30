@@ -1,5 +1,7 @@
 import frappe
 import mobility_customizations as mc
+from frappe import _
+from frappe.utils import flt
 from ksa_customizations.server_script.common_scripts import update_contact_person
 
 def _update_sales_order_billing_from_invoice(doc, is_cancel=False):
@@ -249,6 +251,93 @@ def on_cancel_sales_invoice_dn(doc, method):
 def update_contact(doc, method):
     update_contact_person(doc, method)
 
+@mc.wrap_script()
+def validate_unique_delivery_note_billing(doc, method):
+    if doc.update_stock or doc.is_return or doc.is_debit_note:
+        return
+
+    delivery_notes = [item.delivery_note for item in doc.items if item.delivery_note]
+    
+    if delivery_notes:
+        SI = frappe.qb.DocType("Sales Invoice")
+        SI_Item = frappe.qb.DocType("Sales Invoice Item")
+
+        duplicate_invoices = (
+            frappe.qb.from_(SI_Item)
+            .join(SI).on(SI_Item.parent == SI.name)
+            .select(SI_Item.parent)
+            .where(SI_Item.delivery_note.isin(list(set(delivery_notes))))
+            .where(SI.name != doc.name)
+            .where(SI.docstatus < 2)
+            .where(SI.is_return == 0)
+            .where(SI.is_debit_note == 0)
+            .limit(1)
+        ).run(pluck="parent")
+
+        if duplicate_invoices:
+            frappe.throw(
+                msg=f"The Delivery Note is already linked to another active Invoice: <b>{duplicate_invoices[0]}</b>.",
+                title="Duplicate Invoice Alert"
+            )
+
+@mc.wrap_script()
+def validate_invoice_against_delivery_note(doc, method, item_groups, item_codes):
+    dn_required = frappe.db.get_single_value("Selling Settings", "dn_required")
+    
+    if doc.is_return or doc.is_debit_note or doc.is_opening == 'Yes' or doc.update_stock:
+        return
+    
+    if dn_required == "No":
+        return
+
+    items_to_check = [
+        d for d in doc.items 
+        if d.item_group not in item_groups 
+        and d.item_code not in item_codes
+    ]
+
+    if not items_to_check:
+        return
+
+    dn_details = [d.dn_detail for d in items_to_check if d.dn_detail]
+
+    if dn_required == "Yes" and len(dn_details) < len(items_to_check):
+        frappe.throw(_("Delivery Note is mandatory for all stock items according to Selling Settings."))
+
+    if dn_details:
+        DNI = frappe.qb.DocType("Delivery Note Item")
+        SII = frappe.qb.DocType("Sales Invoice Item")
+        comparison_results = (
+            frappe.qb.from_(DNI)
+            .left_join(SII).on(DNI.name == SII.dn_detail)
+            .select(
+                DNI.parent,
+                DNI.item_code,
+                DNI.qty.as_("delivered_qty"),
+                frappe.qb.functions("Sum", SII.qty).as_("total_billed_qty")
+            )
+            .where(DNI.name.isin(dn_details))
+            .where(SII.docstatus < 2) # Ignore cancelled invoices
+            .groupby(DNI.name)
+        ).run(as_dict=True)
+
+        # 6. Validate Row-Level Quantities
+        for res in comparison_results:
+            if abs(flt(res.delivered_qty) - flt(res.total_billed_qty)) > 0.001:
+                frappe.throw(
+                    _("Item {0} (from {1}): Total Billed ({2}) does not match Delivered ({3})")
+                    .format(res.item_code, res.parent, res.total_billed_qty, res.delivered_qty),
+                    title=_("Quantity Mismatch")
+                )
+
+    # 7. Header-Level Safety Check (Multi-DN support)
+    dn_names = list(set([d.delivery_note for d in items_to_check if d.delivery_note]))
+    if dn_names:
+        total_dn_qty = frappe.db.get_value("Delivery Note", {"name": ["in", dn_names]}, "sum(total_qty)")
+        if abs(flt(total_dn_qty) - flt(doc.total_qty)) > 0.001:
+            frappe.throw(_("The total invoice quantity does not match the sum of linked Delivery Note quantities."))
+
+
 def on_cancel(doc, method):
     on_cancel_sales_invoice_so(doc, method)
     on_cancel_sales_invoice_dn(doc, method)
@@ -259,3 +348,7 @@ def on_submit(doc, method):
 
 def validate(doc, method):
     update_contact(doc, method)
+    validate_unique_delivery_note_billing(doc, method)
+
+def before_submit(doc, method):
+    validate_invoice_against_delivery_note(doc, method)
