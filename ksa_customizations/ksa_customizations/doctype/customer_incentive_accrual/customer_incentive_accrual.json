@@ -1,0 +1,111 @@
+{
+ "actions": [],
+ "autoname": "ACC-CIA-.YYYY.-.#####",
+ "creation": "2026-05-24 15:56:28.385376",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "posting_date",
+  "remarks",
+  "column_break_cbri",
+  "accrual_expense_account",
+  "expense_account",
+  "amended_from",
+  "section_break_qeko",
+  "details"
+ ],
+ "fields": [
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Customer Incentive Accrual",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Posting Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Remarks",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_cbri",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "accrual_expense_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Accrual Expense Account",
+   "link_filters": "[[\"Account\",\"is_group\",\"=\",0],[\"Account\",\"root_type\",\"=\",\"Liability\"]]",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "expense_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Expense Account",
+   "link_filters": "[[\"Account\",\"is_group\",\"=\",0],[\"Account\",\"root_type\",\"=\",\"Expense\"]]",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_qeko",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "details",
+   "fieldtype": "Table",
+   "label": "Details",
+   "options": "Customer Incentive Accrual Detail",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "group": "Related",
+   "link_doctype": "Journal Entry",
+   "link_fieldname": "custom_customer_incentive_accrual"
+  }
+ ],
+ "modified": "2026-06-01 12:36:13.083525",
+ "modified_by": "Administrator",
+ "module": "Ksa Customizations",
+ "name": "Customer Incentive Accrual",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
