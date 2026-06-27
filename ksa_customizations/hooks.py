@@ -135,7 +135,9 @@ before_migrate = "ksa_customizations.before_migrate.Migration"
 
 override_doctype_class = {
 	"Payment Reconciliation": "ksa_customizations.overrides.payment_reconciliation.CustomPaymentReconciliation",
-    "Payment Entry": "ksa_customizations.overrides.payment_entry.CustomPaymentEntry"
+    "Payment Entry": "ksa_customizations.overrides.payment_entry.CustomPaymentEntry",
+    "Appraisal": "ksa_customizations.overrides.appraisal.CustomAppraisal",
+    "Appraisal Cycle": "ksa_customizations.overrides.appraisal_cycle.CustomAppraisalCycle"
 }
 
 # Document Events
@@ -165,6 +167,10 @@ doc_events = {
     "Customer": {
         "on_update": "ksa_customizations.server_script.customer.on_update",
     },
+    "Appraisal": {
+        "validate": "ksa_customizations.server_script.appraisal.fill_appraisal_from_goal_template",
+        "on_submit": "ksa_customizations.server_script.appraisal.create_goals"
+    }
 }
 
 # Scheduled Tasks
