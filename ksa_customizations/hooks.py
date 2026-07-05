@@ -180,7 +180,7 @@ scheduler_events = {
 # 	"all": [
 # 		"ksa_customizations.tasks.all"
 # 	],
-	"daily": [
+	"daily_long": [
 		"ksa_customizations.events.repost_item_valuation_for_zero_qty_stock_entries",
 		"ksa_customizations.events.repost_incorrect_sles"
 	],
