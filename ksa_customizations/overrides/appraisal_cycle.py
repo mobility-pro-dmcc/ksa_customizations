@@ -3,23 +3,61 @@ from frappe import _
 from hrms.hr.doctype.appraisal_cycle.appraisal_cycle import AppraisalCycle
 
 class CustomAppraisalCycle(AppraisalCycle):
-    def get_appraisal_template_map(self):
+    def get_employee_templates(self, employees):
         """
-        Overridden to retrieve both appraisal_template AND goal_template 
-        from the Designation master data.
+        Creates a dictionary mapping Employee names to their templates.
+        Goal Template: Checks Employee first, falls back to Designation.
+        Appraisal Template: Checks Designation only.
         """
-        designations = frappe.get_all(
-            "Designation", 
-            fields=["name", "appraisal_template", "goal_template"]
+        if not employees:
+            return {}
+            
+        employee_names = [employee.name for employee in employees]
+
+        employee_records = frappe.get_all(
+            "Employee",
+            filters={"name": ["in", employee_names]},
+            fields=["name", "goal_template", "designation"]
         )
-        
-        template_maps = frappe._dict()
-        for entry in designations:
-            template_maps[entry.name] = {
-                "appraisal_template": entry.appraisal_template,
-                "goal_template": entry.get("goal_template")
+
+        designation_names = list(set([
+            emp.designation for emp in employee_records if emp.designation
+        ]))
+
+        designation_data = {}
+        if designation_names:
+            designations = frappe.get_all(
+                "Designation",
+                filters={"name": ["in", designation_names]},
+                fields=["name", "goal_template", "appraisal_template"] 
+            )
+            
+            designation_data = {
+                desig.name: desig for desig in designations
             }
-        return template_maps
+
+        final_map = {}
+        
+        for emp in employee_records:
+            desig_info = designation_data.get(emp.designation, {})
+            
+            goal_template = emp.goal_template or desig_info.get("goal_template")
+            
+            appraisal_template = desig_info.get("appraisal_template")
+
+            final_map[emp.name] = {
+                "goal_template": goal_template or None,
+                "appraisal_template": appraisal_template or None
+            }
+
+        for emp_name in employee_names:
+            if emp_name not in final_map:
+                final_map[emp_name] = {
+                    "goal_template": None,
+                    "appraisal_template": None
+                }
+
+        return final_map
 
     @frappe.whitelist()
     def set_employees(self):
@@ -28,14 +66,14 @@ class CustomAppraisalCycle(AppraisalCycle):
         only trigger a missing template message if BOTH templates are absent.
         """
         employees = self.get_employees_for_appraisal()
-        template_maps = self.get_appraisal_template_map()
+        template_maps = self.get_employee_templates(employees)
 
         if employees:
             self.set("appraisees", [])
             template_missing = False
 
             for data in employees:
-                designation_templates = template_maps.get(data.designation, {})
+                designation_templates = template_maps.get(data.name, {})
                 appraisal_template = designation_templates.get("appraisal_template")
                 goal_template = designation_templates.get("goal_template")
 

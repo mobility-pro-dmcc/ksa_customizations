@@ -7,3 +7,4 @@
 ksa_customizations.patches.v15.add_payment_transfer_request_fields
 ksa_customizations.patches.v15.create_cia
 ksa_customizations.patches.v15.create_hr_fields
+ksa_customizations.patches.v15.create_hr_fields2

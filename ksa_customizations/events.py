@@ -1,4 +1,5 @@
 import frappe
+import mobility_customizations as mc
 
 def repost_item_valuation_for_zero_qty_stock_entries():
     # This function identifies stock entries where the total actual quantity is zero but there is a non-zero stock value difference, which can lead to incorrect item valuation. It then creates and submits Repost Item Valuation documents for those entries to correct the valuation.
@@ -68,3 +69,81 @@ def repost_incorrect_sles():
                     repost_entry.insert()
                     repost_entry.submit()
                     frappe.db.commit()
+@mc.wrap_script()
+def create_quarterly_appraisals():
+    def get_hr_emails():
+        """Helper function to get emails of all active users with the 'HR User' role."""
+        hr_roles = frappe.get_all("Has Role", filters={"role": "HR User"}, fields=["parent"])
+        user_names = [role.parent for role in hr_roles]
+        
+        if not user_names:
+            return []
+    
+        users = frappe.get_all(
+            "User", 
+            filters={"name": ("in", user_names), "enabled": 1}, 
+            fields=["email"]
+        )
+        return [user.email for user in users if user.email]
+    """Scheduled function to generate quarterly appraisal cycles and employee appraisals."""
+    current_date = frappe.utils.getdate(frappe.utils.today())
+    year = current_date.year
+    month = current_date.month
+
+    if month in (1, 2, 3):
+        quarter = 1
+        start_date = f"{year}-01-01"
+        end_date = f"{year}-03-31"
+    elif month in (4, 5, 6):
+        quarter = 2
+        start_date = f"{year}-04-01"
+        end_date = f"{year}-06-30"
+    elif month in (7, 8, 9):
+        quarter = 3
+        start_date = f"{year}-07-01"
+        end_date = f"{year}-09-30"
+    else:
+        quarter = 4
+        start_date = f"{year}-10-01"
+        end_date = f"{year}-12-31"
+
+    cycle_name = f"{year} Q{quarter}"
+    hr_emails = get_hr_emails()
+
+    existing_cycle = frappe.db.exists("Appraisal Cycle", {
+        "start_date": start_date,
+        "end_date": end_date
+    })
+
+    if existing_cycle:
+        return
+
+    try:
+        default_company = frappe.db.get_default('Company')
+        
+        cycle = frappe.get_doc({
+            "doctype": "Appraisal Cycle",
+            "cycle_name": cycle_name,
+            "start_date": start_date,
+            "end_date": end_date,
+            "company": default_company
+        })
+        cycle.flags.ignore_permissions = True
+        cycle.insert()
+        cycle.set_employees()
+        cycle.save()
+        cycle.create_appraisals()
+        if hr_emails:
+            frappe.sendmail(
+                recipients=hr_emails,
+                subject=f"Success: Appraisal Cycle {cycle_name} Created",
+                message=f"The Appraisal Cycle <b>{cycle_name}</b> and all corresponding active employee appraisals have been successfully generated for this quarter."
+            )
+    except Exception as e:
+        frappe.log_error(message =f"Error creating Appraisal Cycle {cycle_name}: {str(e)}", title ="Appraisal Scheduler")
+        if hr_emails:
+            frappe.sendmail(
+                recipients=hr_emails,
+                subject=f"Error: Appraisal Cycle Creation Failed - {cycle_name}",
+                message=str(e)
+            )

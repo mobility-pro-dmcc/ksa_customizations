@@ -182,7 +182,8 @@ scheduler_events = {
 # 	],
 	"daily_long": [
 		"ksa_customizations.events.repost_item_valuation_for_zero_qty_stock_entries",
-		"ksa_customizations.events.repost_incorrect_sles"
+		"ksa_customizations.events.repost_incorrect_sles",
+        "ksa_customizations.events.create_quarterly_appraisals"
 	],
 # 	"hourly": [
 # 		"ksa_customizations.tasks.hourly"
