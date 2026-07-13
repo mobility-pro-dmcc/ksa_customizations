@@ -10,6 +10,13 @@ def execute():
                 "fieldtype": "Link",
                 "options": "Goal Template",
                 "insert_after": "grade"
+            },
+            {
+                "fieldname": "custom_functional_manager",
+                "label": "Functional Manager",
+                "fieldtype": "Link",
+                "options": "User",
+                "insert_after": "reports_to"
             }
         ],
     }
