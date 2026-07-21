@@ -133,12 +133,7 @@ def create_quarterly_appraisals():
         cycle.set_employees()
         cycle.save()
         cycle.create_appraisals()
-        if hr_emails:
-            frappe.sendmail(
-                recipients=hr_emails,
-                subject=f"Success: Appraisal Cycle {cycle_name} Created",
-                message=f"The Appraisal Cycle <b>{cycle_name}</b> and all corresponding active employee appraisals have been successfully generated for this quarter."
-            )
+        submit_appraisals(cycle.name)
     except Exception as e:
         frappe.log_error(message =f"Error creating Appraisal Cycle {cycle_name}: {str(e)}", title ="Appraisal Scheduler")
         if hr_emails:
@@ -147,3 +142,12 @@ def create_quarterly_appraisals():
                 subject=f"Error: Appraisal Cycle Creation Failed - {cycle_name}",
                 message=str(e)
             )
+def submit_appraisals(cycle_name):
+    """Submits all appraisals associated with the given appraisal cycle."""
+    appraisals = frappe.get_all("Appraisal", filters={"appraisal_cycle": cycle_name, "docstatus": 0}, fields=["name"])
+    for appraisal in appraisals:
+        try:
+            appraisal_doc = frappe.get_doc("Appraisal", appraisal.name)
+            appraisal_doc.submit()
+        except Exception as e:
+            frappe.log_error(message=f"Error submitting Appraisal {appraisal.name}: {str(e)}", title="Appraisal Submission Error")
