@@ -1,0 +1,33 @@
+{
+ "attach_files": "",
+ "attach_print": 0,
+ "channel": "Email",
+ "condition": "doc.workflow_state == \"Pending\"",
+ "creation": "2026-07-20 12:55:30.159819",
+ "date_changed": "start_date",
+ "days_in_advance": 14,
+ "docstatus": 0,
+ "doctype": "Notification",
+ "document_type": "Goal",
+ "enabled": 1,
+ "event": "Value Change",
+ "idx": 0,
+ "is_standard": 1,
+ "message": "<p>Dear</p>\n\n<p>{{ doc.employee }} submitted their {{ doc.appraisal_cycle }} self-assessment on {{ frappe.utils.formatdate(doc.modified) }} at {{ frappe.utils.format_time(doc.modified) }}.</p>\n\n<p>Your deadline to review all team submissions is {{ frappe.utils.formatdate(doc.end_date) }} 23:59. This is fixed \u2014 it does not change based on when each person submits.</p>\n\n<p>Their submitted scores:<br>\n    {{ doc.goal_name }} \u2192 {{ doc.progress }}%</p>\n\n<p>What you need to do:<br>\n1. Open their kpi: {{ frappe.utils.get_url_to_form('Goal', doc.name) }}<br>\n2. Review score against actual results<br>\n3. Approve, or enter your own score<br>\n4. Submit \u2014 next stage triggers automatically</p>\n\n<p>Anyone who has not submitted by {{ frappe.utils.formatdate(doc.end_date) }} will be escalated to you and HR.</p>\n\n<hr>\n\n<p>\u2500\u2500 \u0627\u0644\u0646\u0633\u062e\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u2500\u2500</p>\n\n<p>\u0639\u0632\u064a\u0632\u064a,</p>\n\n<p>\u0623\u0631\u0633\u0644 {{ doc.employee }} \u062a\u0642\u064a\u064a\u0645\u0647 \u0627\u0644\u0630\u0627\u062a\u064a \u0644\u0644\u0631\u0628\u0639 {{ doc.appraisal_cycle }} \u0628\u062a\u0627\u0631\u064a\u062e {{ frappe.utils.formatdate(doc.modified) }} \u0627\u0644\u0633\u0627\u0639\u0629 {{ frappe.utils.format_time(doc.modified) }}.</p>\n\n<p>\u0645\u0648\u0639\u062f\u0643 \u0627\u0644\u0646\u0647\u0627\u0626\u064a \u0644\u0645\u0631\u0627\u062c\u0639\u0629 \u062c\u0645\u064a\u0639 \u0625\u0631\u0633\u0627\u0644\u0627\u062a \u0641\u0631\u064a\u0642\u0643 \u0647\u0648 {{ frappe.utils.formatdate(doc.end_date) }} \u0627\u0644\u0633\u0627\u0639\u0629 23:59. \u0647\u0630\u0627 \u0627\u0644\u0645\u0648\u0639\u062f \u062b\u0627\u0628\u062a \u0648\u0644\u0627 \u064a\u062a\u063a\u064a\u0631 \u0628\u062d\u0633\u0628 \u062a\u0648\u0642\u064a\u062a \u0625\u0631\u0633\u0627\u0644 \u0643\u0644 \u0645\u0648\u0638\u0641.</p>\n\n<p>\u062f\u0631\u062c\u0627\u062a\u0647 \u0627\u0644\u0645\u064f\u0631\u0633\u064e\u0644\u0629:<br>\n    {{ doc.goal_name }} \u2190 \u0627\u0644\u062a\u0642\u064a\u064a\u0645 \u0627\u0644\u0630\u0627\u062a\u064a: {{ doc.progress }}%</p>\n\n<p>\u062e\u0637\u0648\u0627\u062a \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629:<br>\n\u0661. \u0627\u0641\u062a\u062d \u0645\u0644\u0641 \u0627\u0644\u062a\u0642\u064a\u064a\u0645: {{ frappe.utils.get_url_to_form('Goal', doc.name) }}<br>\n\u0662. \u0631\u0627\u062c\u0639 \u0627\u0644\u062f\u0631\u062c\u0629 \u0641\u064a \u0645\u0642\u0627\u0628\u0644 \u0627\u0644\u0646\u062a\u0627\u0626\u062c \u0627\u0644\u0641\u0639\u0644\u064a\u0629 \u0627\u0644\u062a\u064a \u0644\u062f\u064a\u0643<br>\n\u0663. \u0648\u0627\u0641\u0642 \u0639\u0644\u0649 \u0627\u0644\u062f\u0631\u062c\u0629 \u0623\u0648 \u0639\u062f\u0651\u0644\u0647\u0627<br>\n\u0664. \u0623\u0631\u0633\u0644 \u2014 \u0633\u062a\u0646\u062a\u0642\u0644 \u0627\u0644\u062f\u0648\u0631\u0629 \u062a\u0644\u0642\u0627\u0626\u064a\u0627\u064b \u0625\u0644\u0649 \u0627\u0644\u0645\u0631\u062d\u0644\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629</p>\n\n<p>\u0623\u064a \u0645\u0648\u0638\u0641 \u0644\u0645 \u064a\u064f\u0631\u0633\u0644 \u0628\u062d\u0644\u0648\u0644 \u0645\u0648\u0639\u062f\u0647 \u0627\u0644\u0646\u0647\u0627\u0626\u064a \u0633\u064a\u064f\u0635\u0639\u064e\u0651\u062f \u062a\u0644\u0642\u0627\u0626\u064a\u0627\u064b \u0625\u0644\u064a\u0643 \u0648\u0625\u0644\u0649 \u0627\u0644\u0645\u0648\u0627\u0631\u062f \u0627\u0644\u0628\u0634\u0631\u064a\u0629.</p>\n",
+ "message_type": "Markdown",
+ "modified": "2026-07-20 16:40:08.220193",
+ "modified_by": "Administrator",
+ "module": "Ksa Customizations",
+ "name": "Goal progress submitted for manager",
+ "owner": "Administrator",
+ "recipients": [
+  {
+   "receiver_by_document_field": "direct_manager_email",
+   "receiver_by_role": ""
+  }
+ ],
+ "send_system_notification": 0,
+ "send_to_all_assignees": 0,
+ "subject": "{{ doc.employee_name }} Submitted Their {{ doc.goal_name}} Self-Assessment",
+ "value_changed": "workflow_state"
+}
