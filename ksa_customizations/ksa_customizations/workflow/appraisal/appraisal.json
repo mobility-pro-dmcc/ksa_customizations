@@ -1,0 +1,231 @@
+{
+ "creation": "2026-07-21 16:45:33.917612",
+ "docstatus": 0,
+ "doctype": "Workflow",
+ "document_type": "Appraisal",
+ "edited_by": "User",
+ "idx": 0,
+ "is_active": 1,
+ "is_standard": 1,
+ "modified": "2026-07-27 15:54:18.434881",
+ "modified_by": "Administrator",
+ "module": "Ksa Customizations",
+ "name": "Appraisal",
+ "override_status": 0,
+ "owner": "Administrator",
+ "send_email_alert": 0,
+ "states": [
+  {
+   "allow_edit": "Employee",
+   "avoid_status_override": 0,
+   "doc_status": "0",
+   "is_optional_state": 0,
+   "send_email": 0,
+   "state": "Draft"
+  },
+  {
+   "allow_edit": "Employee",
+   "avoid_status_override": 0,
+   "doc_status": "0",
+   "is_optional_state": 0,
+   "send_email": 0,
+   "state": "Pending"
+  },
+  {
+   "allow_edit": "None",
+   "avoid_status_override": 0,
+   "doc_status": "0",
+   "is_optional_state": 0,
+   "send_email": 1,
+   "state": "Approved By Direct Manager"
+  },
+  {
+   "allow_edit": "None",
+   "avoid_status_override": 0,
+   "doc_status": "0",
+   "is_optional_state": 0,
+   "send_email": 1,
+   "state": "Rejected By Direct Manager",
+   "update_field": "progress",
+   "update_value": "0"
+  },
+  {
+   "allow_edit": "None",
+   "avoid_status_override": 0,
+   "doc_status": "0",
+   "is_optional_state": 0,
+   "next_action_email_template": "",
+   "send_email": 1,
+   "state": "Approved By Functional Manager"
+  },
+  {
+   "allow_edit": "None",
+   "avoid_status_override": 0,
+   "doc_status": "0",
+   "is_optional_state": 0,
+   "send_email": 1,
+   "state": "Rejected By Functional Manager",
+   "update_field": "progress",
+   "update_value": "0"
+  },
+  {
+   "allow_edit": "None",
+   "avoid_status_override": 0,
+   "doc_status": "0",
+   "is_optional_state": 0,
+   "next_action_email_template": "email template",
+   "send_email": 1,
+   "state": "Approved By HR"
+  },
+  {
+   "allow_edit": "None",
+   "avoid_status_override": 0,
+   "doc_status": "0",
+   "is_optional_state": 0,
+   "send_email": 1,
+   "state": "Rejected By HR",
+   "update_field": "progress",
+   "update_value": "0"
+  },
+  {
+   "allow_edit": "None",
+   "avoid_status_override": 0,
+   "doc_status": "1",
+   "is_optional_state": 0,
+   "send_email": 1,
+   "state": "Approved"
+  },
+  {
+   "allow_edit": "None",
+   "avoid_status_override": 0,
+   "doc_status": "0",
+   "is_optional_state": 0,
+   "send_email": 1,
+   "state": "Rejected",
+   "update_field": "progress",
+   "update_value": "0"
+  }
+ ],
+ "transitions": [
+  {
+   "action": "Send to Direct Manager",
+   "allow_self_approval": 1,
+   "allowed": "Employee",
+   "next_state": "Pending",
+   "send_email_to_creator": 0,
+   "state": "Draft"
+  },
+  {
+   "action": "Direct Approve By Coo",
+   "allow_self_approval": 1,
+   "allowed": "COO",
+   "next_state": "Approved",
+   "send_email_to_creator": 0,
+   "state": "Draft"
+  },
+  {
+   "action": "Approve",
+   "allow_self_approval": 1,
+   "allowed": "Employee",
+   "condition": "(frappe.session.user == frappe.db.get_value(\"Employee\", doc.employee, \"reports_to_email\")) or frappe.db.get_value(\"Has Role\", [[\"parent\", \"=\", frappe.session.user], ['role', \"=\", \"COO\"]])",
+   "next_state": "Approved By Direct Manager",
+   "send_email_to_creator": 0,
+   "state": "Pending"
+  },
+  {
+   "action": "Reject",
+   "allow_self_approval": 1,
+   "allowed": "Employee",
+   "condition": "(frappe.session.user == frappe.db.get_value(\"Employee\", doc.employee, \"reports_to_email\")) or frappe.db.get_value(\"Has Role\", [[\"parent\", \"=\", frappe.session.user], ['role', \"=\", \"COO\"]])",
+   "next_state": "Rejected By Direct Manager",
+   "send_email_to_creator": 0,
+   "state": "Pending"
+  },
+  {
+   "action": "Approve",
+   "allow_self_approval": 1,
+   "allowed": "Employee",
+   "condition": "(frappe.session.user == frappe.db.get_value(\"Employee\", doc.employee, \"custom_functional_manager\")) or frappe.db.get_value(\"Has Role\", [[\"parent\", \"=\", frappe.session.user], ['role', \"=\", \"COO\"]])",
+   "next_state": "Approved By Functional Manager",
+   "send_email_to_creator": 0,
+   "state": "Approved By Direct Manager"
+  },
+  {
+   "action": "Reject",
+   "allow_self_approval": 1,
+   "allowed": "Employee",
+   "condition": "(frappe.session.user == frappe.db.get_value(\"Employee\", doc.employee, \"custom_functional_manager\")) or frappe.db.get_value(\"Has Role\", [[\"parent\", \"=\", frappe.session.user], ['role', \"=\", \"COO\"]])",
+   "next_state": "Rejected By Functional Manager",
+   "send_email_to_creator": 0,
+   "state": "Approved By Direct Manager"
+  },
+  {
+   "action": "Approve",
+   "allow_self_approval": 1,
+   "allowed": "Employee",
+   "condition": "frappe.db.get_value(\"Has Role\", [[\"parent\", \"=\", frappe.session.user], ['role', \"in\", [\"COO\", \"HR Manager\"]]])",
+   "next_state": "Approved By HR",
+   "send_email_to_creator": 0,
+   "state": "Approved By Functional Manager"
+  },
+  {
+   "action": "Reject",
+   "allow_self_approval": 1,
+   "allowed": "Employee",
+   "condition": "frappe.db.get_value(\"Has Role\", [[\"parent\", \"=\", frappe.session.user], ['role', \"in\", [\"COO\", \"HR Manager\"]]])",
+   "next_state": "Rejected By HR",
+   "send_email_to_creator": 0,
+   "state": "Approved By Functional Manager"
+  },
+  {
+   "action": "Approve",
+   "allow_self_approval": 1,
+   "allowed": "COO",
+   "next_state": "Approved",
+   "send_email_to_creator": 0,
+   "state": "Approved By HR"
+  },
+  {
+   "action": "Reject",
+   "allow_self_approval": 1,
+   "allowed": "COO",
+   "next_state": "Rejected",
+   "send_email_to_creator": 0,
+   "state": "Approved By HR"
+  },
+  {
+   "action": "Review",
+   "allow_self_approval": 1,
+   "allowed": "Employee",
+   "next_state": "Draft",
+   "send_email_to_creator": 0,
+   "state": "Rejected By Direct Manager"
+  },
+  {
+   "action": "Review",
+   "allow_self_approval": 1,
+   "allowed": "Employee",
+   "next_state": "Draft",
+   "send_email_to_creator": 0,
+   "state": "Rejected By Functional Manager"
+  },
+  {
+   "action": "Review",
+   "allow_self_approval": 1,
+   "allowed": "Employee",
+   "next_state": "Draft",
+   "send_email_to_creator": 0,
+   "state": "Rejected By HR"
+  },
+  {
+   "action": "Review",
+   "allow_self_approval": 1,
+   "allowed": "Employee",
+   "next_state": "Draft",
+   "send_email_to_creator": 0,
+   "state": "Rejected"
+  }
+ ],
+ "workflow_name": "Appraisal",
+ "workflow_state_field": "workflow_state"
+}

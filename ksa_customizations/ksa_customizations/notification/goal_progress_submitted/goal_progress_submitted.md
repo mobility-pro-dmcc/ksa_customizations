@@ -2,13 +2,23 @@
 
 <p>Your {{ doc.appraisal_cycle }} self-assessment was successfully submitted on {{ frappe.utils.formatdate(doc.modified) }} at {{ frappe.utils.format_time(doc.modified) }}.</p>
 
-<p>You Direct Manager has been notified and will complete their review by {{ frappe.utils.formatdate(doc.end_date) }}.</p>
+<p>Your direct manager has been notified and will complete their review by {{ frappe.utils.formatdate(doc.end_date) }}.</p>
 
-<p>Your submitted score:<br>
-{{ doc.goal_name }} → Self-Score: {{ doc.progress }}%<br>
+<p>Your submitted scores:<br>
+
+{% for row in doc.appraisal_kra %}
+    {{ row.idx }}) {{ row.kra }} ({{ row.per_weightage }}%)<br>
+    <ul>
+        {% for kpi in frappe.db.get_list("Goal", {"kra": row.kra, "appraisal_cycle": doc.appraisal_cycle, "employee": doc.employee, "is_group":["!=", 1]}, ["goal_name", "kra", "progress"]) %}
+            <li>{{ kpi.goal_name }}: {{ kpi.progress }}%</li>
+        {% endfor %}
+    </ul>
+{% endfor %}
+Weighted Self-Score: {{ "{:.2f}".format(doc.total_score * 20) }}%</p>
+
 <p>Note: This is your self-assessed score only. Your final score is confirmed after the full review chain is complete. You will be notified when the cycle closes.</p>
 
-<p>View your submission: {{ frappe.utils.get_url_to_form('Goal', doc.name) }}</p>
+<p>View your submission: {{ frappe.utils.get_url_to_form('Appraisal', doc.name) }}</p>
 
 <hr>
 
@@ -21,8 +31,16 @@
 <p>تم إخطار مديرك المباشر وسيُنهي مراجعته بحلول {{ frappe.utils.formatdate(doc.end_date) }}.</p>
 
 <p>ملخص درجاتك المُرسَلة:<br>
-    {{ doc.goal_name }} ← تقييمك الذاتي: {{ doc.progress }}%<br>
+{% for row in doc.appraisal_kra %}
+    {{ row.idx }}) {{ row.kra }} ({{ row.per_weightage }}%)<br>
+    <ul>
+        {% for kpi in frappe.db.get_list("Goal", {"kra": row.kra, "appraisal_cycle": doc.appraisal_cycle, "employee": doc.employee, "is_group":["!=", 1]}, ["goal_name", "kra", "progress"]) %}
+            <li>{{ kpi.goal_name }}: {{ kpi.progress }}%</li>
+        {% endfor %}
+    </ul>
+{% endfor %}
+الدرجة الإجمالية المرجّحة (تقييم ذاتي): {{  "{:.2f}".format(doc.total_score * 20) }}%</p>
 
 <p>تجدر الإشارة إلى أن هذه الدرجة تعكس تقييمك الذاتي فحسب. ستُحدَّد درجتك النهائية بعد اكتمال سلسلة المراجعة، وستُخطَر بها فور إغلاق الدورة.</p>
 
-<p>عرض إرسالك: {{ frappe.utils.get_url_to_form('Goal', doc.name) }}</p>
+<p>عرض إرسالك: {{ frappe.utils.get_url_to_form('Appraisal', doc.name) }}</p>

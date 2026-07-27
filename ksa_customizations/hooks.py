@@ -169,7 +169,7 @@ doc_events = {
     },
     "Appraisal": {
         "validate": "ksa_customizations.server_script.appraisal.fill_appraisal_from_goal_template",
-        "on_submit": "ksa_customizations.server_script.appraisal.create_goals"
+        "after_insert": "ksa_customizations.server_script.appraisal.create_goals"
     }
 }
 

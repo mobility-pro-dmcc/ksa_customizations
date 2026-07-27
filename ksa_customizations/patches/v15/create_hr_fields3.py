@@ -19,6 +19,34 @@ def execute():
                 "fieldtype": "Data",
                 "insert_after": "employee",
                 "fetch_from": "employee.user_id"
+            },
+            {
+                "fieldname": "direct_manager_email",
+                "label": "Direct Manager Email",
+                "fieldtype": "Data",
+                "insert_after": "employee",
+                "fetch_from": "employee.reports_to_email"
+            },
+            {
+                "fieldname": "functional_manager_email",
+                "label": "Functional Manager Email",
+                "fieldtype": "Data",
+                "insert_after": "employee",
+                "fetch_from": "employee.custom_functional_manager"
+            },
+            {
+                "fieldname": "start_date",
+                "label": "Start Date",
+                "fieldtype": "Date",
+                "insert_after": "appraisal_cycle",
+                "fetch_from": "appraisal_cycle.start_date"
+            },
+            {
+                "fieldname": "end_date",
+                "label": "End Date",
+                "fieldtype": "Date",
+                "insert_after": "appraisal_cycle",
+                "fetch_from": "appraisal_cycle.end_date"
             }
         ],
         "Goal": [
@@ -28,13 +56,6 @@ def execute():
                 "fieldtype": "Data",
                 "insert_after": "employee",
                 "fetch_from": "employee.user_id"
-            },
-            {
-                "fieldname": "direct_manager_email",
-                "label": "Direct Manager Email",
-                "fieldtype": "Data",
-                "insert_after": "employee",
-                "fetch_from": "employee.reports_to_email"
             }
         ]
     }
