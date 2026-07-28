@@ -1,5 +1,6 @@
 import frappe
 import mobility_customizations as mc
+from frappe.utils import add_days, today, getdate
 
 def repost_item_valuation_for_zero_qty_stock_entries():
     # This function identifies stock entries where the total actual quantity is zero but there is a non-zero stock value difference, which can lead to incorrect item valuation. It then creates and submits Repost Item Valuation documents for those entries to correct the valuation.
@@ -141,3 +142,35 @@ def create_quarterly_appraisals():
                 subject=f"Error: Appraisal Cycle Creation Failed - {cycle_name}",
                 message=str(e)
             )
+
+@mc.wrap_script()
+def send_weekly_payment_reminders():
+    if getdate(today()).weekday() != 6:
+        return
+
+    overdue_limit = add_days(today(), -7)
+
+    overdue_invoices = frappe.get_all(
+        "Sales Invoice",
+        filters={
+            "docstatus": 1,
+            "outstanding_amount": [">", 0],
+            "is_return": 0,
+            "is_debit_note": 0,
+            "due_date": ["<", overdue_limit],
+            "send_notification": 1
+        }
+    )
+
+    if not overdue_invoices:
+        return
+
+    try:
+        notification = frappe.get_doc("Notification", "تذكير اسبوعي بالسداد")
+    except frappe.DoesNotExistError:
+        frappe.log_error("Notification 'تذكير اسبوعي بالسداد' not found in the system.")
+        return
+
+    for invoice in overdue_invoices:
+        doc = frappe.get_doc("Sales Invoice", invoice.name)
+        notification.send(doc)
