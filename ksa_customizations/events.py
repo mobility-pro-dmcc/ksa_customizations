@@ -150,7 +150,7 @@ def send_weekly_payment_reminders():
 
     overdue_limit = add_days(today(), -7)
 
-    overdue_invoices = frappe.get_all(
+    overdue_invoices = frappe.qb.get_query(
         "Sales Invoice",
         filters={
             "docstatus": 1,
@@ -158,9 +158,10 @@ def send_weekly_payment_reminders():
             "is_return": 0,
             "is_debit_note": 0,
             "due_date": ["<", overdue_limit],
-            "send_notification": 1
-        }
-    )
+            "customer.send_whatsapp_notifications": 1
+        },
+        fields=["name"]
+    ).run(as_dict=True)
 
     if not overdue_invoices:
         return
