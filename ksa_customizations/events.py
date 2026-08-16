@@ -154,7 +154,7 @@ def send_weekly_payment_reminders():
         "Sales Invoice",
         filters={
             "docstatus": 1,
-            "outstanding_amount": [">", 0],
+            "outstanding_amount": [">", 2000],
             "is_return": 0,
             "is_debit_note": 0,
             "due_date": ["<", overdue_limit],
