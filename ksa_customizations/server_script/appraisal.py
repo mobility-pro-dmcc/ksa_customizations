@@ -37,6 +37,7 @@ def create_goals(doc, method):
                 "employee": doc.employee,
                 "kra": row.kra_group,
                 "appraisal_cycle": doc.appraisal_cycle,
+                "goal_name_ar": row.kra_name_ar,
                 "is_group": 1,  # Critical: Mark as group container
                 "start_date": doc.start_date,
                 "end_date": doc.end_date,
@@ -61,6 +62,8 @@ def create_goals(doc, method):
                 "employee": doc.employee,
                 "kra": row.kra_group,
                 "appraisal_cycle": doc.appraisal_cycle,
+                "goal_name_ar": row.goal_name_ar,
+                "expected_target_amount": row.target,
                 "parent_goal": parent_goal_name,  # Link to the group goal above
                 "is_group": 0,  # Leaf node
                 "start_date": doc.start_date,

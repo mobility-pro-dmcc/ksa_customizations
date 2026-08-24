@@ -43,7 +43,7 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {"Appraisal" : "public/js/appraisal.js"}
 # doctype_list_js = {"Delivery Note" : "public/js/delivery_note_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -170,6 +170,9 @@ doc_events = {
     "Appraisal": {
         "validate": "ksa_customizations.server_script.appraisal.fill_appraisal_from_goal_template",
         "after_insert": "ksa_customizations.server_script.appraisal.create_goals"
+    },
+    "Goal": {
+        "before_save": "ksa_customizations.server_script.goal.before_save"
     }
 }
 

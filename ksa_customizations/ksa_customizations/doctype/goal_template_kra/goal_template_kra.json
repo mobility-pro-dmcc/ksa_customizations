@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "kra",
+  "kra_name_ar",
   "weight"
  ],
  "fields": [
@@ -24,13 +25,21 @@
    "in_list_view": 1,
    "label": "Weight (%)",
    "reqd": 1
+  },
+  {
+   "fetch_from": "kra.kra_name_ar",
+   "fieldname": "kra_name_ar",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "KRA Name in Arabic",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-06-11 10:28:01.623233",
+ "modified": "2026-08-24 16:34:23.144854",
  "modified_by": "Administrator",
  "module": "Ksa Customizations",
  "name": "Goal Template KRA",

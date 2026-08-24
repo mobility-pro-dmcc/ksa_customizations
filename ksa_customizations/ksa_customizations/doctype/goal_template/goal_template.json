@@ -1,11 +1,14 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "naming_series:",
  "creation": "2026-06-11 10:28:30.941497",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "designation",
+  "naming_series",
+  "notes",
   "kra_template_section",
   "kra",
   "section_goals",
@@ -43,15 +46,28 @@
    "label": "KRA",
    "options": "Goal Template KRA",
    "reqd": 1
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Naming Series",
+   "options": "HR-GT-"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-11 10:35:18.154505",
+ "modified": "2026-08-23 15:44:41.436039",
  "modified_by": "Administrator",
  "module": "Ksa Customizations",
  "name": "Goal Template",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {
@@ -81,6 +97,7 @@
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
+ "search_fields": "designation",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

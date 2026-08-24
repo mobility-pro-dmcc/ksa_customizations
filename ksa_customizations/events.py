@@ -72,6 +72,9 @@ def repost_incorrect_sles():
                     frappe.db.commit()
 @mc.wrap_script()
 def create_quarterly_appraisals():
+    start_cycle = any(frappe.utils.getdate(frappe.utils.today()) == date for date in frappe.get_all("Appraisal Cycle Creation Dates", fields=["date"], pluck="date"))
+    if not start_cycle:
+        return
     def get_hr_emails():
         """Helper function to get emails of all active users with the 'HR User' role."""
         hr_roles = frappe.get_all("Has Role", filters={"role": "HR User"}, fields=["parent"])
@@ -90,27 +93,12 @@ def create_quarterly_appraisals():
     current_date = frappe.utils.getdate(frappe.utils.today())
     year = current_date.year
     month = current_date.month
-
-    if month in (1, 2, 3):
-        quarter = 1
-        start_date = f"{year}-01-01"
-        end_date = f"{year}-03-31"
-    elif month in (4, 5, 6):
-        quarter = 2
-        start_date = f"{year}-04-01"
-        end_date = f"{year}-06-30"
-    elif month in (7, 8, 9):
-        quarter = 3
-        start_date = f"{year}-07-01"
-        end_date = f"{year}-09-30"
-    else:
-        quarter = 4
-        start_date = f"{year}-10-01"
-        end_date = f"{year}-12-31"
-
+    quarter = (month - 1) // 3 + 1
+    start_date = frappe.utils.today()
     cycle_name = f"{year} Q{quarter}"
     hr_emails = get_hr_emails()
-
+    hr_settings =frappe.get_single("HR Settings")
+    end_date = frappe.utils.add_days(frappe.utils.today(), hr_settings.appraisal_cycle_duration)
     existing_cycle = frappe.db.exists("Appraisal Cycle", {
         "start_date": start_date,
         "end_date": end_date
