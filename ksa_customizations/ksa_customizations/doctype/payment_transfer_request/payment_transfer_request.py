@@ -49,7 +49,13 @@ class PaymentTransferRequest(Document):
 		payment_entry = frappe.get_doc(payment_dict)
 		payment_entry.flags.ignore_permissions=True
 		payment_entry.flags.ignore_accounts_permissions=True
-		payment_entry.submit()
+
+		current_user = frappe.session.user
+		frappe.set_user("Administrator")
+		try:
+			payment_entry.submit()
+		finally:
+			frappe.set_user(current_user)
 
 	def delete_payment_entry(self):
 		payment_name = frappe.db.get_value("Payment Entry", {"custom_payment_transfer_request": self.name})
