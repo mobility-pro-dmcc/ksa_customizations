@@ -6,6 +6,12 @@ from frappe.model.document import Document
 
 
 class CustomerIncentiveAccrual(Document):
+	def validate(self):
+		self.calculate_total_amount()
+
+	def calculate_total_amount(self):
+		self.total_amount = sum(row.amount or 0 for row in self.details)
+
 	def on_submit(self):
 		self.create_journal_entry()
 

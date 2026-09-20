@@ -12,7 +12,8 @@
   "expense_account",
   "amended_from",
   "section_break_qeko",
-  "details"
+  "details",
+  "total_amount"
  ],
  "fields": [
   {
@@ -46,6 +47,7 @@
    "fieldname": "accrual_expense_account",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Accrual Expense Account",
    "link_filters": "[[\"Account\",\"is_group\",\"=\",0],[\"Account\",\"root_type\",\"=\",\"Liability\"]]",
    "options": "Account",
@@ -55,6 +57,7 @@
    "fieldname": "expense_account",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Expense Account",
    "link_filters": "[[\"Account\",\"is_group\",\"=\",0],[\"Account\",\"root_type\",\"=\",\"Expense\"]]",
    "options": "Account",
@@ -65,10 +68,20 @@
    "fieldtype": "Section Break"
   },
   {
+   "allow_bulk_edit": 1,
    "fieldname": "details",
    "fieldtype": "Table",
    "label": "Details",
    "options": "Customer Incentive Accrual Detail",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Total Amount",
+   "read_only": 1,
    "reqd": 1
   }
  ],
@@ -82,11 +95,11 @@
    "link_fieldname": "custom_customer_incentive_accrual"
   }
  ],
- "modified": "2026-06-01 12:36:13.083525",
+ "modified": "2026-09-20 16:32:47.951437",
  "modified_by": "Administrator",
  "module": "Ksa Customizations",
  "name": "Customer Incentive Accrual",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
