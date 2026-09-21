@@ -1,6 +1,8 @@
 import frappe
 import mobility_customizations as mc
 from frappe.utils import add_days, today, getdate
+from frappe.query_builder.functions import Sum
+
 
 def repost_item_valuation_for_zero_qty_stock_entries():
     # This function identifies stock entries where the total actual quantity is zero but there is a non-zero stock value difference, which can lead to incorrect item valuation. It then creates and submits Repost Item Valuation documents for those entries to correct the valuation.
@@ -136,30 +138,28 @@ def send_weekly_payment_reminders():
     if getdate(today()).weekday() != 6:
         return
 
-    overdue_limit = add_days(today(), -7)
+    si = frappe.qb.DocType("Sales Invoice")
+    seven_days_ago = frappe.utils.add_days(frappe.utils.today(), -7)
 
-    overdue_invoices = frappe.qb.get_query(
-        "Sales Invoice",
-        filters={
-            "docstatus": 1,
-            "outstanding_amount": [">", 2000],
-            "is_return": 0,
-            "is_debit_note": 0,
-            "due_date": ["<", overdue_limit],
-            "customer.send_whatsapp_notifications": 1
-        },
-        fields=["name"]
-    ).run(as_dict=True)
+    query = (
+        frappe.qb.from_(si)
+        .select(si.customer)
+        .where(
+            (si.docstatus == 1) &
+            (si.outstanding_amount > 0) &
+            (si.due_date <= seven_days_ago)
+        )
+        .groupby(si.customer)
+        .having(Sum(si.outstanding_amount) > 2000)
+    )
 
-    if not overdue_invoices:
-        return
-
+    customers = query.run(pluck=True)
     try:
         notification = frappe.get_doc("Notification", "تذكير اسبوعي بالسداد")
     except frappe.DoesNotExistError:
         frappe.log_error("Notification 'تذكير اسبوعي بالسداد' not found in the system.")
         return
 
-    for invoice in overdue_invoices:
-        doc = frappe.get_doc("Sales Invoice", invoice.name)
+    for customer in customers:
+        doc = frappe.get_doc("Customer", customer)
         notification.send(doc)

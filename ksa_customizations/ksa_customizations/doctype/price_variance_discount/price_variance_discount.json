@@ -1,0 +1,112 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-16 09:54:37.559989",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sales_invoices",
+  "column_break_cmsg",
+  "income_account",
+  "reason",
+  "section_break_frvz",
+  "items",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "sales_invoices",
+   "fieldtype": "Table MultiSelect",
+   "label": "Sales Invoices",
+   "options": "Price Variance Discount Invoices",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_cmsg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "sales_invoices",
+   "fieldname": "income_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Income Account",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Expense Account\"]]",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_frvz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Price Variance Discount Detail"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Price Variance Discount",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Reason",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-09-21 14:25:37.231947",
+ "modified_by": "Administrator",
+ "module": "Ksa Customizations",
+ "name": "Price Variance Discount",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

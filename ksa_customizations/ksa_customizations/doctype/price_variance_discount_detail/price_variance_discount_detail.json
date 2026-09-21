@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-20 10:21:13.116438",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "item_name",
+  "production_year",
+  "diff"
+ ],
+ "fields": [
+  {
+   "columns": 6,
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "item_code.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name"
+  },
+  {
+   "columns": 2,
+   "fieldname": "production_year",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Production Year",
+   "options": "Production Year",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "diff",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Difference"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-20 10:21:13.116438",
+ "modified_by": "Administrator",
+ "module": "Ksa Customizations",
+ "name": "Price Variance Discount Detail",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
