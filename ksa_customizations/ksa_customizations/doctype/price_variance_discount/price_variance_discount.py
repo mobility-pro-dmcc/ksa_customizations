@@ -8,6 +8,15 @@ from frappe.model.document import Document
 from frappe.utils import today
 from frappe import _
 class PriceVarianceDiscount(Document):
+	def validate(self):
+		self.validate_duplicate_items()
+	def validate_duplicate_items(self):
+		set_of_items = {}
+		for item in self.items:
+			key = f"{item.item_code}-{item.production_year}"
+			if set_of_items.get(key):
+				frappe.throw(_("Item {0} with production year {1} is duplicated.").format(item.item_code, item.production_year))
+			set_of_items[key] = 1
 	def before_submit(self):
 		invoices = self.get_invoices_details()
 		processed_invoices = []
@@ -41,14 +50,16 @@ class PriceVarianceDiscount(Document):
 		return return_invoice.name
 
 	def attach_differences(self, invoice_details):
-		items_prices = {item.item_code: item.diff for item in self.items}
+		items_prices = {f"{item.item_code}-{item.production_year}": item.diff for item in self.items}
 		for item in invoice_details:
-			item.rate = items_prices.get(item.item_code)
+			key = f"{item.item_code}-{item.production_year}"
+			item.rate = items_prices.get(key)
 			item.qty = -item.qty
 			item.sales_invoice_item = item.get("name") 
 			item.income_account = self.income_account
 			item.pop("name", None)
 			item.pop("parent", None)
+
 	@frappe.whitelist()
 	def get_invoices_details(self):
 		if not self.items or not self.sales_invoices:
@@ -85,7 +96,7 @@ class PriceVarianceDiscount(Document):
 				Sum(si_item.qty).as_("qty")
 			)
 			.where(
-				(si.docstatus != 2) &
+				(si.docstatus == 1) &
 				(si_item.item_code.isin(items_list)) &
 				(
 					(si.name.isin(invoices_list)) |
