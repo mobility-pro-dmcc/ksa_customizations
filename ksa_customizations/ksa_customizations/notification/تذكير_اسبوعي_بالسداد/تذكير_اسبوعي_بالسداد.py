@@ -10,8 +10,8 @@ def get_context(context):
 			{
 				"customer": customer,
 				"docstatus": 1,
-				"outstanding_amount": [">", 0],
-				"due_date": ["<=",overdue_limit],
+				"outstanding_amount": ["!=", 0],
+				"due_date": ["<", today()],
 			},
 			"sum(outstanding_amount)"
 		) or 0
@@ -37,6 +37,6 @@ def get_context(context):
 		return query.run(pluck=True) or " "
 	doc = context["doc"]
 	context["outstanding_amount"] = get_customer_outstanding_amount(doc.name)
-	context["outstanding_invoices"] = (" • ".join(get_outstanding_invoices(doc.name))).encode()
+	context["outstanding_invoices"] = (" • ".join(get_outstanding_invoices(doc.name)[:10])).encode()
 
 	return context

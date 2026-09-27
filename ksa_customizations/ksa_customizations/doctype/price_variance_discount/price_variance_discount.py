@@ -31,7 +31,9 @@ class PriceVarianceDiscount(Document):
 			frappe.msgprint(_("variance discounts discarded as listed item are not included in any invoice"))
 	def make_return_invoice(self, invoice, invoice_details):
 		customer, company = frappe.db.get_value("Sales Invoice", invoice, ["customer", "company"])
-		return_invoice = frappe.get_doc({
+		return_invoice = frappe.new_doc("Sales Invoice")
+		
+		return_invoice.update({
 			"doctype": "Sales Invoice",
 			"is_return": 1,
 			"posting_date": today(),
@@ -41,12 +43,16 @@ class PriceVarianceDiscount(Document):
 			"return_against": invoice,     
 			"custom_return_reason": self.reason,
 			"custom_note_reason": self.reason,
-			"income_account": self.income_account
+			"taxes_and_charges": self.tax,
+			"income_account": self.income_account,
+			"remarks": f"""{self.reason}
+Invoice: {invoice}"""
 		})
-		return_invoice.insert(ignore_permissions=True)
+		return_invoice.set("custom_return_against_additional_references", [{"sales_invoice": invoice}])
 		return_invoice.set_missing_values()
 		return_invoice.calculate_taxes_and_totals()
-		return_invoice.save()
+		return_invoice.insert(ignore_permissions=True)
+		# return_invoice.save()
 		return return_invoice.name
 
 	def attach_differences(self, invoice_details):
@@ -82,7 +88,7 @@ class PriceVarianceDiscount(Document):
 
 		original_row_name = Case().when(si.is_return == 1, si_item.sales_invoice_item).else_(si_item.name)
 		
-		original_invoice_name = Case().when(si.is_return == 1, si.credit_adjustment_against).else_(si.name)
+		original_invoice_name = Case().when(si.is_return == 1, si.return_against).else_(si.name)
 
 		query = (
 			frappe.qb.from_(si_item)
@@ -100,7 +106,7 @@ class PriceVarianceDiscount(Document):
 				(si_item.item_code.isin(items_list)) &
 				(
 					(si.name.isin(invoices_list)) |
-					(si.credit_adjustment_against.isin(invoices_list))
+					(si.return_against.isin(invoices_list))
 				) &
 				combined_items_filter
 			)
