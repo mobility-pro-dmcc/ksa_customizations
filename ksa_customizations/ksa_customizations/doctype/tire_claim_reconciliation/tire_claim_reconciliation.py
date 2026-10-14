@@ -51,8 +51,6 @@ class TireClaimReconciliation(Document):
 				"company": company,
 				"return_against": self.sales_invoice,
 				"credit_adjustment_against": self.sales_invoice,
-				# Sales Invoice.tire_claim is a single link: keep the first, the rest are in remarks
-				"tire_claim": claims[0] if claims else None,
 				"custom_return_reason": self.reason,
 				"custom_note_reason": self.reason,
 				"taxes_and_charges": self.tax,
