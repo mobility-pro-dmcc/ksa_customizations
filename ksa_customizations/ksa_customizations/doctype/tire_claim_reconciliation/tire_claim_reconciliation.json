@@ -45,7 +45,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Income Account",
-   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Expense Account\"]]",
+   "link_filters": "[[\"Account\",\"is_group\",\"=\",0],[\"Account\",\"root_type\",\"=\",\"Expense\"]]",
    "options": "Account",
    "reqd": 1
   },
@@ -122,7 +122,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-13 10:54:41.753902",
+ "modified": "2026-10-13 21:27:29.325023",
  "modified_by": "Administrator",
  "module": "Ksa Customizations",
  "name": "Tire Claim Reconciliation",

@@ -60,6 +60,7 @@ class TireClaimReconciliation(Document):
 				"remarks": remarks,
 			}
 		)
+		return_invoice.set("custom_tire_claims", [{"tire_claim": claim} for claim in claims])
 		return_invoice.set("custom_return_against_additional_references", [{"sales_invoice": self.sales_invoice}])
 
 		original_rows = {
