@@ -1,0 +1,91 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:category",
+ "creation": "2026-10-15 13:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "category",
+  "category_en",
+  "expense_account",
+  "include_in_landed_cost_voucher",
+  "column_break_ocze",
+  "keywords"
+ ],
+ "fields": [
+  {
+   "fieldname": "category",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Category",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "expense_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Expense Account",
+   "link_filters": "[[\"Account\",\"is_group\",\"=\",0],[\"Account\",\"account_type\",\"in\",[\"Expenses Included In Valuation\",\"Tax\",null]]]",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "include_in_landed_cost_voucher",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Include in Landed Cost Voucher?"
+  },
+  {
+   "fieldname": "column_break_ocze",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Keywords entered here help the AI model identify the correct category when processing an invoice. Enter one keyword per line.",
+   "fieldname": "keywords",
+   "fieldtype": "Long Text",
+   "label": "Keywords",
+   "reqd": 1
+  },
+  {
+   "fieldname": "category_en",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Category in English",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-17 12:15:50.316282",
+ "modified_by": "Administrator",
+ "module": "Ksa Customizations",
+ "name": "Landed Cost Expense Category",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Accounts User"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "category"
+}

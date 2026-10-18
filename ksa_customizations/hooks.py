@@ -43,8 +43,9 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-doctype_js = {"Appraisal" : "public/js/appraisal.js"}
+doctype_js = {"Appraisal" : "public/js/appraisal.js", "Purchase Receipt": "public/js/purchase_receipt.js"}
 # doctype_list_js = {"Delivery Note" : "public/js/delivery_note_list.js"}
+doctype_list_js = {"Journal Entry": "public/js/journal_entry_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -173,6 +174,9 @@ doc_events = {
     },
     "Goal": {
         "before_save": "ksa_customizations.server_script.goal.before_save"
+    },
+    "Journal Entry": {
+        "validate": "ksa_customizations.server_script.journal_entry.validate",
     }
 }
 
@@ -281,3 +285,7 @@ scheduler_events = {
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+
+# Fixtures
+# --------
+fixtures = [{"dt": "AI Model"}]
