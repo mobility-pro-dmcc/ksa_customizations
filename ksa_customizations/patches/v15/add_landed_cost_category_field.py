@@ -10,7 +10,7 @@ def execute():
                 "fieldname": "landed_cost_category",
                 "label": "Landed Cost Category",
                 "fieldtype": "Link",
-                "options": "Landed Cost Expense Category Mapper",
+                "options": "Landed Cost Expense Category",
                 "insert_after": "expense_account",
                 "in_list_view": 1,
             }
