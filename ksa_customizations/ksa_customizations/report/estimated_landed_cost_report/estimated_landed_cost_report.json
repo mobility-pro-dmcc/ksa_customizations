@@ -1,0 +1,150 @@
+{
+ "add_total_row": 0,
+ "add_translate_data": 0,
+ "columns": [
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Data",
+   "label": "Item Code",
+   "width": 100
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name",
+   "width": 250
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Link",
+   "label": "Brand",
+   "options": "Brand",
+   "width": 120
+  },
+  {
+   "fieldname": "item_group",
+   "fieldtype": "Link",
+   "label": "Item Group",
+   "options": "Item Group",
+   "width": 120
+  },
+  {
+   "fieldname": "production_year",
+   "fieldtype": "Link",
+   "label": "Production Year",
+   "options": "Production Year",
+   "width": 80
+  },
+  {
+   "fieldname": "invoice_qty",
+   "fieldtype": "Int",
+   "label": "Shipment Qty",
+   "width": 150
+  },
+  {
+   "fieldname": "invoice_cost_rate",
+   "fieldtype": "Currency",
+   "label": "Shipment Cost Price",
+   "width": 150
+  },
+  {
+   "fieldname": "current_stock_qty",
+   "fieldtype": "Int",
+   "label": "Current Stock Qty",
+   "width": 150
+  },
+  {
+   "fieldname": "current_cost_rate",
+   "fieldtype": "Currency",
+   "label": "Current Cost Price",
+   "width": 150
+  },
+  {
+   "fieldname": "future_stock_qty",
+   "fieldtype": "Int",
+   "label": "Future Stock Qty",
+   "width": 150
+  },
+  {
+   "fieldname": "future_cost_rate",
+   "fieldtype": "Currency",
+   "label": "Future Cost Price",
+   "width": 150
+  },
+  {
+   "fieldname": "price_list_rate",
+   "fieldtype": "Currency",
+   "label": "Selling Price",
+   "width": 150
+  },
+  {
+   "fieldname": "invoice_gpm",
+   "fieldtype": "Data",
+   "label": "Shipment GP%",
+   "width": 150
+  },
+  {
+   "fieldname": "current_gpm",
+   "fieldtype": "Data",
+   "label": "Current GP%",
+   "width": 150
+  },
+  {
+   "fieldname": "future_gpm",
+   "fieldtype": "Data",
+   "label": "Future GP%",
+   "width": 150
+  }
+ ],
+ "creation": "2026-10-01 11:58:50.903430",
+ "disable_prepared_report_automation": 0,
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "doctype_to_sync": [],
+ "filters": [
+  {
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Link",
+   "label": "Purchase Invoice",
+   "mandatory": 1,
+   "options": "Purchase Invoice",
+   "wildcard_filter": 0
+  }
+ ],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letter_head": null,
+ "modified": "2026-10-18 17:07:05.191384",
+ "modified_by": "Administrator",
+ "module": "Ksa Customizations",
+ "name": "Estimated Landed Cost Report",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "query": "WITH\nlanded_cost_breakdown AS (\n    SELECT elc.name AS item_group, elc.estimated_landed_cost_account, elc.exchange_rate, elcd.expense_name, elcd.expense_type, elcd.value\n    FROM `tabEstimated Landed Cost Detail` elcd\n    INNER JOIN `tabEstimated Landed Cost` elc ON elcd.parent = elc.name\n),\npurchase_invoice_detail AS (\n    SELECT DISTINCT i.item_group, pi.cntr_vol, pi.pod, pi.grand_total, pi.base_grand_total,\n           IF(pi.incoterm = 'FOB', pi.cntr_vol * pi.freight_per_cntr, 0) AS freight\n    FROM `tabPurchase Invoice Item` pii\n    INNER JOIN `tabPurchase Invoice` pi ON pii.parent = pi.name\n    INNER JOIN `tabItem` i ON pii.item_code = i.name\n    WHERE pii.docstatus = 1 AND pi.is_return = 0 AND pi.update_stock = 0\n      AND pi.name = %(purchase_invoice)s\n      AND pi.name NOT IN (SELECT purchase_invoice FROM `tabPurchase Receipt Item` WHERE docstatus = 1 AND qty > 0 AND purchase_invoice IS NOT NULL)\n),\nestimated_landed_cost AS (\n    SELECT ROUND((SUM(\n        CASE\n            WHEN lcbd.expense_type = 'Percentage-wise' AND lcbd.expense_name = 'Customs Duties' THEN pid.grand_total * lcbd.exchange_rate * lcbd.value + pid.grand_total * lcbd.exchange_rate * lcbd.value * 0.03 + pid.freight * 3.76 * lcbd.value\n            WHEN lcbd.expense_type = 'Percentage-wise' AND lcbd.expense_name != 'Customs Duties' THEN pid.grand_total * lcbd.exchange_rate * lcbd.value\n            WHEN lcbd.expense_type = 'Container-wise' AND lcbd.expense_name = 'DMM to JED Transport' AND pid.pod = 'Dammam' THEN pid.cntr_vol * lcbd.value\n            WHEN lcbd.expense_type = 'Container-wise' AND lcbd.expense_name = 'Transportation' AND pid.pod != 'Dammam' THEN pid.cntr_vol * lcbd.value\n            WHEN lcbd.expense_type = 'Container-wise' AND lcbd.expense_name NOT IN ('DMM to JED Transport', 'Transportation') THEN pid.cntr_vol * lcbd.value\n            WHEN lcbd.expense_type = 'Shipment-wise' THEN lcbd.value\n            ELSE 0\n        END) + MAX(pid.freight) * 3.76) * 1.03, 2) / pid.base_grand_total AS prorata\n    FROM landed_cost_breakdown lcbd\n    INNER JOIN purchase_invoice_detail pid ON lcbd.item_group = pid.item_group\n),\npurchase_invoice_item AS (\n    SELECT i.item_group, pii.item_code, i.item_name, i.brand, pii.production_year, ts.sorting_code,\n        SUM(pii.qty) AS qty,\n        SUM((pii.base_net_amount + pii.item_tax_amount) * (1 + elc.prorata)) AS total_cost_amount\n    FROM `tabPurchase Invoice Item` pii\n    INNER JOIN `tabPurchase Invoice` pi ON pii.parent = pi.name\n    INNER JOIN `tabItem` i ON pii.item_code = i.name\n    INNER JOIN `tabTire Size` ts ON i.tire_size = ts.name\n    CROSS JOIN estimated_landed_cost elc\n    WHERE pii.docstatus = 1 AND pi.is_return = 0 AND pi.update_stock = 0\n      AND pi.name = %(purchase_invoice)s\n      AND pi.name NOT IN (SELECT purchase_invoice FROM `tabPurchase Receipt Item` WHERE docstatus = 1 AND qty > 0 AND purchase_invoice IS NOT NULL)\n    GROUP BY pii.item_code, pii.production_year\n),\nstock_detail AS (\n    SELECT item_code, production_year,\n        SUM(actual_qty) AS bal_qty,\n        (SUM(SUM(stock_value_difference)) OVER (PARTITION BY item_code) / SUM(SUM(actual_qty)) OVER (PARTITION BY item_code)) * SUM(actual_qty) AS bal_value\n    FROM `tabStock Ledger Entry`\n    WHERE is_cancelled = 0\n    GROUP BY item_code, production_year\n),\nitem_price AS (\n    SELECT item_code, production_year, price_list_rate\n    FROM `tabItem Price`\n    WHERE selling = 1\n      AND price_list IN (\n          SELECT value FROM `tabSingles`\n          WHERE doctype = 'Selling Settings' AND field = 'selling_price_list'\n      )\n)\nSELECT pii.item_code,\n    pii.item_name,\n    pii.brand,\n    pii.item_group,\n    pii.production_year,\n    pii.qty AS invoice_qty,\n    pii.total_cost_amount / pii.qty AS invoice_cost_rate,\n    IFNULL(sd.bal_qty, 0) AS current_stock_qty,\n    IFNULL(sd.bal_value, 0) / IFNULL(sd.bal_qty, 0) AS current_cost_rate,\n    pii.qty + IFNULL(sd.bal_qty, 0) AS future_stock_qty,\n    (pii.total_cost_amount + IFNULL(sd.bal_value, 0)) / (pii.qty + IFNULL(sd.bal_qty, 0)) AS future_cost_rate,\n    ip.price_list_rate,\n    CONCAT(ROUND((ip.price_list_rate - pii.total_cost_amount / pii.qty) / ip.price_list_rate * 100, 1), '%%') AS invoice_gpm,\n    CONCAT(ROUND((ip.price_list_rate - IFNULL(sd.bal_value, 0) / IFNULL(sd.bal_qty, 0)) / ip.price_list_rate * 100, 1), '%%') AS current_gpm,\n    CONCAT(ROUND((ip.price_list_rate - (pii.total_cost_amount + IFNULL(sd.bal_value, 0)) / (pii.qty + IFNULL(sd.bal_qty, 0))) / ip.price_list_rate * 100, 1), '%%') AS future_gpm\nFROM purchase_invoice_item pii\nLEFT JOIN stock_detail sd ON pii.item_code = sd.item_code AND pii.production_year = sd.production_year\nLEFT JOIN item_price ip ON pii.item_code = ip.item_code AND pii.production_year = ip.production_year",
+ "ref_doctype": "Purchase Invoice",
+ "report_name": "Estimated Landed Cost Report",
+ "report_type": "Query Report",
+ "roles": [
+  {
+   "role": "Auditor"
+  },
+  {
+   "role": "Accounts User"
+  },
+  {
+   "role": "Accounts Manager"
+  },
+  {
+   "role": "Purchase User"
+  },
+  {
+   "role": "Procurement Team Leader"
+  },
+  {
+   "role": "General Accountant"
+  }
+ ],
+ "snapshot_report": 0,
+ "timeout": 0
+}
