@@ -335,10 +335,11 @@ def get_estimated_landed_cost(purchase_receipt):
         SELECT MAX(lcbd.estimated_landed_cost_account) AS expense_account,
             ROUND((SUM(
             CASE
-                WHEN lcbd.expense_type = 'Percentage-wise' AND lcbd.expense_name = 'Customs Duties' THEN prd.grand_total * lcbd.exchange_rate * lcbd.value + prd.grand_total * lcbd.exchange_rate * lcbd.value * 0.03 + prd.freight * 3.76 * lcbd.value
-                WHEN lcbd.expense_type = 'Percentage-wise' AND lcbd.expense_name != 'Customs Duties' THEN prd.grand_total * lcbd.exchange_rate * lcbd.value
-                WHEN lcbd.expense_type = 'Container-wise' AND lcbd.expense_name = 'DMM to JED Transport' AND prd.pod = 'Dammam' THEN prd.cntr_vol * lcbd.value
-                WHEN lcbd.expense_type = 'Container-wise' AND lcbd.expense_name != 'DMM to JED Transport' THEN prd.cntr_vol * lcbd.value
+                WHEN lcbd.expense_type = 'Percentage-wise' AND lcbd.expense_name = 'Customs Duties' THEN pid.grand_total * lcbd.exchange_rate * lcbd.value + pid.grand_total * lcbd.exchange_rate * lcbd.value * 0.03 + pid.freight * 3.76 * lcbd.value
+                WHEN lcbd.expense_type = 'Percentage-wise' AND lcbd.expense_name != 'Customs Duties' THEN pid.grand_total * lcbd.exchange_rate * lcbd.value
+                WHEN lcbd.expense_type = 'Container-wise' AND lcbd.expense_name = 'DMM to JED Transport' AND pid.pod = 'Dammam' THEN pid.cntr_vol * lcbd.value
+                WHEN lcbd.expense_type = 'Container-wise' AND lcbd.expense_name = 'Transportation' AND pid.pod != 'Dammam' THEN pid.cntr_vol * lcbd.value
+                WHEN lcbd.expense_type = 'Container-wise' AND lcbd.expense_name NOT IN ('DMM to JED Transport', 'Transportation') THEN pid.cntr_vol * lcbd.value
                 WHEN lcbd.expense_type = 'Shipment-wise' THEN lcbd.value
                 ELSE 0
             END) + MAX(prd.freight) * 3.76) * 1.03, 2) AS cost
