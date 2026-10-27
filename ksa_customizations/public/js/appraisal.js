@@ -7,7 +7,7 @@ frappe.ui.form.on('Appraisal', {
 				employee: frm.doc.employee,
 				appraisal_cycle: frm.doc.appraisal_cycle,
 			};
-			frappe.set_route("Report", "Goal");
+			frappe.set_route("List", "Goal", "Report", "Goal Template");
         });
     }
 })

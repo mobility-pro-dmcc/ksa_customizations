@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "naming_series:",
  "creation": "2026-06-11 10:28:30.941497",
@@ -63,7 +64,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-23 15:44:41.436039",
+ "modified": "2026-10-21 09:46:09.818085",
  "modified_by": "Administrator",
  "module": "Ksa Customizations",
  "name": "Goal Template",

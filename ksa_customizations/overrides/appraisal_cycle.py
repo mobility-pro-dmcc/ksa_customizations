@@ -3,6 +3,32 @@ from frappe import _
 from hrms.hr.doctype.appraisal_cycle.appraisal_cycle import AppraisalCycle
 
 class CustomAppraisalCycle(AppraisalCycle):
+    def get_employees_for_appraisal(self):
+            filters = {
+                "status": "Active",
+                "company": self.company,
+                "follows_kpis": 1,
+            }
+            if self.department:
+                filters["department"] = self.department
+            if self.branch:
+                filters["branch"] = self.branch
+            if self.designation:
+                filters["designation"] = self.designation
+    
+            employees = frappe.db.get_all(
+                "Employee",
+                filters=filters,
+                fields=[
+                    "name",
+                    "employee_name",
+                    "branch",
+                    "designation",
+                    "department",
+                ],
+            )
+    
+            return employees
     def get_employee_templates(self, employees):
         """
         Creates a dictionary mapping Employee names to their templates.

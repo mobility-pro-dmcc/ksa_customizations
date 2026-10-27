@@ -41,8 +41,10 @@ def upload_landed_cost_file(file_url, against_account, purchase_receipt, progres
 
     frappe.flags.landed_cost_progress_id = progress_id
     file_doc = frappe.get_doc("File", {"file_url": file_url})
-    rows = execute(file_doc.get_full_path())
-
+    ai_returned_data = execute(file_doc.get_full_path())
+    rows = ai_returned_data[0]
+    returned_vats = ai_returned_data[1]
+    # return rows
     seller_name = next((row.get("account") for row in rows if row.get("account")), "")
     # Account for each line, from its Landed Cost Expense Category
     for row in rows:
@@ -53,15 +55,43 @@ def upload_landed_cost_file(file_url, against_account, purchase_receipt, progres
         "seller_tax_id": next((row.get("sell_trn") for row in rows if row.get("sell_trn")), ""),
         "seller_name": seller_name,
     }
+    # Other invoices inside the PDF that charge VAT: one entry each, against the Tax account.
+    # "account" is the issuer there too, so keep it as seller_name before replacing it with the account.
+    attachments = [
+        {
+            "invoice_date": row.get("invoice_date") or "",
+            "invoice_no": row.get("invoice_no") or "",
+            "seller_tax_id": row.get("sell_trn") or "",
+            "seller_name": row.get("account") or "",
+        }
+        for row in returned_vats
+    ]
+    for row, attachment in zip(returned_vats, attachments):
+        row["seller_name"] = attachment["seller_name"]
+        row["account"] = row.get("expense_account") or ""
     # Kept on the server for create_landed_cost_journal_entry, so the browser only sends the table rows
-    frappe.cache.set_value(upload_cache_key(file_url), invoice, expires_in_sec=24 * 60 * 60)
+    frappe.cache.set_value(upload_cache_key(file_url), {**invoice, "attachments": attachments},
+                           expires_in_sec=24 * 60 * 60)
     buyer_check = check_buyer(
         frappe.db.get_value("Purchase Receipt", purchase_receipt, "company"),
         next((row.get("bill_name") for row in rows if row.get("bill_name")), ""),
         next((row.get("bill_TRN") for row in rows if row.get("bill_TRN")), ""),
     )
     return {"against_account": against_account, "purchase_receipt": purchase_receipt, "rows": rows,
-            "file_url": file_url, "buyer_check": buyer_check, **invoice}
+            "file_url": file_url, "buyer_check": buyer_check, **invoice,
+            "returned_vats": returned_vats, "vat_account": get_vat_account()}
+
+
+VAT_CATEGORY_EN = "Tax"
+
+
+def get_vat_account():
+    """Account and Arabic category of the Landed Cost Expense Category whose category_en is "Tax"."""
+    row = frappe.db.get_value(
+        "Landed Cost Expense Category", {"category_en": VAT_CATEGORY_EN}, ["expense_account", "category"],
+        as_dict=True,
+    ) or {}
+    return {"account": row.get("expense_account") or "", "account_ar": row.get("category") or ""}
 
 
 def upload_cache_key(file_url):
@@ -138,19 +168,25 @@ def find_vendor_by_tax_id(tax_id):
 
 
 @frappe.whitelist()
-def create_landed_cost_journal_entry(purchase_receipt, accounts, file_url=None):
+def create_landed_cost_journal_entry(purchase_receipt, accounts, file_url=None, attachment_index=None):
     """Create a draft Landed Cost Entry journal entry from the dialog table, dated on the invoice date
     (also bill_date, with bill_no = the invoice number) and with the processed invoice PDF attached.
     party_name / party_tax_id come from the Vendor whose vendor_tax_id matches the seller's VAT number.
     The invoice fields come from the server cache filled by upload_landed_cost_file.
 
     accounts: list of {account, account_ar, debit, credit} (description is ignored).
+    attachment_index: set for the VAT entry of another invoice inside the PDF (returned_vats[index]);
+        its own invoice number, date and seller are used instead of the main invoice's.
     """
     accounts = frappe.parse_json(accounts)
     if not accounts:
         frappe.throw(_("There are no accounting entries to post"))
 
     invoice = (frappe.cache.get_value(upload_cache_key(file_url)) if file_url else None) or {}
+    if attachment_index not in (None, ""):
+        attachments = invoice.get("attachments") or []
+        index = frappe.utils.cint(attachment_index)
+        invoice = attachments[index] if 0 <= index < len(attachments) else {}
     invoice_date = invoice.get("invoice_date")
     invoice_no = invoice.get("invoice_no")
     seller_tax_id = invoice.get("seller_tax_id")
@@ -190,8 +226,8 @@ def create_landed_cost_journal_entry(purchase_receipt, accounts, file_url=None):
 
     je.insert()
 
-    # Attach the processed invoice (same file, linked to the journal entry)
-    if file_url:
+    # Attach the processed invoice (same file, linked to the journal entry); not for the VAT entries
+    if file_url and attachment_index in (None, ""):
         source = frappe.db.get_value("File", {"file_url": file_url}, ["file_name", "is_private"], as_dict=True)
         if source:
             frappe.get_doc({

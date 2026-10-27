@@ -122,17 +122,22 @@ def load_known_trn():
     return known
 
 
+def account_lines():
+    """The account list shown to Claude (all categories except VAT)."""
+    vat = vat_row()
+    return "\n".join(f"    {en}  ({r.expense_category_ar or ''})  keywords: {', '.join(r.keywords)}"
+                     for en, r in ACCOUNTS.items() if r is not vat)
+
+
 def build_prompt():
     field_lines = "\n".join(f"- {name}: {desc}." for name, desc in FIELDS.items())
     schema = {**{name: "" for name in FIELDS},
               "vat_numbers": [{"number": "", "company": "", "side": "seller or customer"}],
-              "items": [{"description": "", "value": 0, "vat_rate": 0, "line_account": ""}],
+              "items": [{"description": "", "value": 0, "vat_rate": 0, "line_account": "", "references": []}],
               "vat": 0, "vat_percent": 0, "taxable_amount": 0, "total_after_vat": 0}
     attach = ", ".join(SEARCH_ATTACHMENTS) or "none"
-    account_lines = "\n".join(f"    {en}  ({r.expense_category_ar or ''})  keywords: {', '.join(r.keywords)}"
-                              for en, r in ACCOUNTS.items() if r is not vat_row())
     return f"""
-    read only first invoice  
+    read only first invoice
     You will see the pages of ONE PDF. Layouts, languages (Arabic / English) and suppliers vary.
 
 1. Find the MAIN document: the invoice, tax invoice, credit note or debit note that the PDF is about
@@ -176,7 +181,7 @@ Items: every line of the main document's table.
   (e.g. "ضريبة القيمة المضافة 15%" / "Total VAT 15%"), use that rate for every taxable line.
   Use 0 for lines marked 0%, exempt, or pass-through lines with no VAT.
 - line_account: the expense account this line belongs to, chosen from this list ONLY (return the English name exactly):
-{account_lines}
+{account_lines()}
   Decide by the MEANING of the description (Arabic or English), for example:
     "اجور التخليص" / "خدمة تخلص حاوية" / "REVENUE - CLEARANCE" -> Customs Clearance
     "اجور الموانئ" / "سداد اجور موانئ" / "PORT FEES" / "اجور التفريغ" / "رسوم مناولة بوابة" -> Port Charges
@@ -192,6 +197,8 @@ Items: every line of the main document's table.
     "شهادة مطابقة" / "SABER" / "COC" -> COC
   If no account fits, return "".
 - Sub-lines (references, notes, "فاتورة سداد رقم ...") are not separate lines.
+- references: every number printed in the line's sub-lines, as text (e.g. "فاتورة سداد رقم 926670808486" ->
+  "926670808486"). [] if the line has no sub-lines.
 
 VAT (from the main document only):
 - vat: the total VAT AMOUNT exactly as printed (إجمالي الضريبة / اجمالي ضريبة / Total VAT / ضريبة القيمة المضافة /
@@ -274,6 +281,139 @@ Find only this: {field} = {hints}
 
 Return raw JSON only: {{{json.dumps(field)}: ""}}  (use "" if it is not printed anywhere)
 """
+
+
+# ── VAT on attachment invoices ──────────────────────────────────────────────
+# Other invoices inside the same PDF (Fasah, Mawani, port / terminal, shipping line ...) that charge VAT.
+# One dict per invoice. Invoices with no VAT (0 / "-" / not printed) are ignored.
+def attachment_vat_prompt(info, items):
+    schema = {"invoices": [{"account": "", "invoice_no": "", "sadad_no": "", "invoice_date": "", "sell_trn": "",
+                            "bill_of_lading": "", "bill_name": "", "bill_TRN": "", "vat": 0, "main_line": 0,
+                            "vat_lines": [{"description": "", "vat": 0}]}]}
+    main_lines = "\n".join(f"    {n}. {as_text(i.get('description'))}" for n, i in enumerate(items, 1)) or "    (none)"
+    return f"""These pages are ONE PDF. The MAIN invoice (invoice_no "{info['invoice_no']}", issued by
+"{info['account']}") is already read — IGNORE it completely.
+
+Look at the OTHER pages (attachments) and find every OTHER invoice that charges VAT: Fasah / فسح invoices,
+Mawani / موانئ invoices, port or terminal invoices, shipping-line invoices, etc.
+- One invoice can continue on the next page (its line table, totals or Payment Receipt are often on the
+  following page). Treat it as ONE invoice and never list it twice.
+- Customs declarations (بيان جمركي / Custom Declaration) and stand-alone payment receipts are NOT invoices: skip them.
+- Skip any invoice whose total VAT is 0 / 0.00 / "-" / not printed.
+
+For each invoice WITH VAT return:
+- account: the company that ISSUED the invoice (Biller Name / اسم المفوتر / Seller / letterhead), in Arabic if
+  printed in Arabic. On a Fasah invoice it is the Biller (e.g. "شركة محطة بوابة البحر الأحمر"), NOT Fasah.
+- invoice_no: the invoice number exactly as printed (Invoice No / رقم الفاتورة / Invoice Ref.No /
+  الرقم المرجعي للفاتورة). NOT the SADAD bill number, Biller Ref.No, declaration or بوليصة number.
+- sadad_no: the SADAD number of this invoice (SADAD Bill Number / رقم فاتورة سداد / رقم سداد). "" if not printed.
+- invoice_date: the issue date (not the due date, not the print date), as YYYY-MM-DD.
+  "26-07-2026" -> 2026-07-26 (day first).
+- sell_trn: the issuer's VAT number (Biller VAT Number / الرقم الضريبي للمفوتر / seller header).
+  15 digits, starts and ends with 3. "" if not printed.
+- bill_of_lading: the بوليصة printed on THIS invoice (Bill Of Lading / رقم البوليصة). "" if not printed.
+- bill_name: the customer COMPANY of this invoice (Payer Name / اسم المستفيد / العميل / صاحب البضاعة / Importer),
+  Arabic if printed in Arabic. Keep only the company name once, drop legal-form tails:
+  "شركة لنا المستقبل للتجارة شركة شخص واحد" -> "شركة لنا المستقبل للتجارة";
+  "شركة الإطارات العربية للتجارة شركة شخص واحد" -> "شركة الإطارات العربية للتجارة".
+- bill_TRN: the customer's VAT number (Payer VAT Number / الرقم الضريبي للمستفيد). "" if printed as "--" or missing.
+- vat: the TOTAL VAT amount of the invoice exactly as printed (Total VAT / ضريبة القيمة المضافة / إجمالي الضريبة).
+- vat_lines: ONLY the lines of this invoice that have a VAT amount > 0:
+    description: as printed, Arabic if both are printed (e.g. "رسوم المعلومات الالكترونية"),
+    vat: that line's VAT amount.
+- main_line: the number of the MAIN invoice's line that this invoice is paid / charged under. The main invoice
+  lines are:
+{main_lines}
+  Usually the main line lists this invoice's SADAD number in its sub-lines ("فاتورة سداد رقم ...")
+  or its description says what was paid (e.g. "سداد اجور موانئ" pays port / terminal / Fasah invoices).
+  0 if no line fits.
+
+Numbers: positive, plain, no separators. IDs: uppercase, no spaces, dashes or slashes. Never invent a value: use "".
+If there is no other invoice with VAT, return {{"invoices": []}}.
+
+Return raw JSON only, exactly in this shape:
+{json.dumps(schema, ensure_ascii=False)}
+"""
+
+
+def same_company(a, b):
+    a, b = normalize(a), normalize(b)
+    return bool(a and b and (a == b or a in b or b in a))
+
+
+ACCOUNT_COLUMNS = ["account_ar", "account_en", "expense_account", "include_in_lcv"]
+
+
+def digits(value):
+    return re.sub(r"\D", "", as_text(value))
+
+
+def main_row_for(inv, items, main_rows):
+    """The main-invoice row (first dict) this attachment invoice belongs to. None if not found.
+    1. its SADAD / invoice number is printed under a main line ("فاتورة سداد رقم ...")
+    2. the main line Claude chose (main_line)
+    3. the only pass-through line of the main invoice (no VAT)"""
+    keys = {k for k in (digits(inv.get("sadad_no")), digits(inv.get("invoice_no"))) if len(k) >= 6}
+    for item, row in zip(items, main_rows):
+        refs = {digits(r) for r in item.get("references") or []} | {digits(item.get("description"))}
+        if keys & refs or any(k in r for k in keys for r in refs if r):
+            return row
+    n = int(num(inv.get("main_line")))
+    if 1 <= n <= len(main_rows):
+        return main_rows[n - 1]
+    pass_through = [row for item, row in zip(items, main_rows)
+                    if not percent(item.get("vat_rate")) and num(item.get("value"))]
+    return pass_through[0] if len(pass_through) == 1 else None
+
+
+def attachment_vat_rows(pages, info, known_trn, items, main_rows):
+    """One dict per attachment invoice that has VAT. [] if there is none.
+    items / main_rows: the main invoice's lines and their rows (same order) — the account columns are copied from them."""
+    try:
+        found = ask(pages, attachment_vat_prompt(info, items)).get("invoices") or []
+    except Exception as e:
+        print("   attachment VAT search error:", e)
+        return []
+
+    rows, seen = [], {clean_id(info["invoice_no"])}
+    for inv in found:
+        lines = [l for l in inv.get("vat_lines") or [] if num(l.get("vat")) > 0]
+        vat = num(inv.get("vat")) or round(sum(num(l.get("vat")) for l in lines), 2)
+        invoice_no = re.sub(r"\s", "", as_text(inv.get("invoice_no")))
+        if vat <= 0 or not invoice_no or clean_id(invoice_no) in seen:     # no VAT, main invoice or duplicate
+            continue
+        seen.add(clean_id(invoice_no))
+
+        row = {"account": as_text(inv.get("account")), "invoice_no": invoice_no,
+               "invoice_date": as_text(inv.get("invoice_date")),
+               "sell_trn": clean_id(inv.get("sell_trn")), "bill_of_lading": clean_bl(inv.get("bill_of_lading")),
+               "bill_name": as_text(inv.get("bill_name")), "bill_TRN": clean_id(inv.get("bill_TRN"))}
+        for col in ("sell_trn", "bill_TRN"):
+            if not is_vat_number(row[col]):
+                row[col] = ""
+        if row["sell_trn"] and row["sell_trn"] == row["bill_TRN"]:
+            row["sell_trn"] = ""
+
+        # Blanks: take them from the main invoice / the Company list
+        row["bill_name"] = row["bill_name"] or info["bill_name"]
+        row["bill_of_lading"] = row["bill_of_lading"] or info["bill_of_lading"]
+        if not row["bill_TRN"]:
+            row["bill_TRN"] = (known_trn.get(normalize(row["bill_name"]))
+                               or (info["bill_TRN"] if same_company(row["bill_name"], info["bill_name"]) else ""))
+        if not row["sell_trn"]:
+            row["sell_trn"] = known_trn.get(normalize(row["account"]), "")
+
+        # Account columns = copied from the main-invoice row this invoice is paid under
+        main_row = main_row_for(inv, items, main_rows)
+        if main_row:
+            accounts = {col: main_row.get(col) for col in ACCOUNT_COLUMNS}
+        else:
+            accounts = account_columns(None)
+            print(f"   ⚠ no main-invoice line found for attachment invoice {invoice_no}")
+        description = " / ".join(dict.fromkeys(as_text(l.get("description")) for l in lines if l.get("description")))
+        rows.append({**row, "description": description or "الضريبة", **accounts, "vat": vat})
+        print(f"   attachment invoice {invoice_no}: VAT {vat:,.2f}")
+    return rows
 
 
 def pdf_pages(path):
@@ -418,7 +558,7 @@ def assign_vat_numbers(info, vat_numbers):
         info["sell_trn"] = ""
 
 
-TOTAL_STEPS = 7
+TOTAL_STEPS = 8
 
 
 def progress(step, message):
@@ -436,9 +576,14 @@ def progress(step, message):
 
 
 def execute(pdf_file):
-    """Read one PDF and return a list of rows (one per line + one VAT row)."""
+    """Read one PDF.
+
+    Returns (rows, attachment_vat):
+      rows           – main invoice: one row per line + one VAT row (same as before)
+      attachment_vat – one dict per OTHER invoice in the PDF that has VAT ([] if none)
+    """
     global client, MODEL, ACCOUNTS
-    progress(0, _("Step 1/7: Loading AI settings and account mapping"))
+    progress(0, _("Step 1/8: Loading AI settings and account mapping"))
     keys = frappe.get_single("KSA Customization Settings").get_ai_info()
     MODEL = keys["model"]
     client = anthropic.Anthropic(api_key=keys["api_key"], max_retries=5,
@@ -449,9 +594,9 @@ def execute(pdf_file):
     prompt = build_prompt()                          # built with the accounts from Landed Cost Mapping
 
     try:
-        progress(1, _("Step 2/7: Converting PDF pages to images"))
+        progress(1, _("Step 2/8: Converting PDF pages to images"))
         pages = pdf_pages(pdf_file)
-        progress(2, _("Step 3/7: Extracting invoice data with AI"))
+        progress(2, _("Step 3/8: Extracting invoice data with AI"))
         data = ask(pages, prompt)
         if has_header_row(data.get("items", [])):          # header read as a line -> read the table again
             print("   table header read as a line -> reading the table again")
@@ -461,13 +606,13 @@ def execute(pdf_file):
     except Exception as e:
         frappe.throw(f"Could not read the PDF: {e}")
 
-    progress(3, _("Step 4/7: Cleaning extracted fields and VAT numbers"))
+    progress(3, _("Step 4/8: Cleaning extracted fields and VAT numbers"))
     info = {name: clean_id(data.get(name)) if name in TEXT_FIELDS else as_text(data.get(name))
             for name in FIELDS}
     info["bill_of_lading"] = clean_bl(info["bill_of_lading"])
     assign_vat_numbers(info, data.get("vat_numbers"))
 
-    progress(4, _("Step 5/7: Checking missing or doubtful fields (second search)"))
+    progress(4, _("Step 5/8: Checking missing or doubtful fields (second search)"))
     # Second search: ask again, only for that field, if it is missing or doesn't look right
     for field, (hints, ok) in SECOND_SEARCH.items():
         if ok(info[field], info):
@@ -482,7 +627,7 @@ def execute(pdf_file):
             print(f"   {field} search error:", e)
         print(f"   {field} (2nd search): {info[field] or 'not found'}")
 
-    progress(5, _("Step 6/7: Filling known VAT numbers and calculating VAT"))
+    progress(5, _("Step 6/8: Filling known VAT numbers and calculating VAT"))
     # Fill an empty VAT number from the Company's tax_id
     known_trn = load_known_trn()
     for name_col, trn_col in (("account", "sell_trn"), ("bill_name", "bill_TRN")):
@@ -494,7 +639,7 @@ def execute(pdf_file):
     if how not in ("printed", "no VAT"):
         print(f"   VAT not printed -> calculated {vat:,.2f} ({how})")
 
-    progress(6, _("Step 7/7: Mapping lines to accounts"))
+    progress(6, _("Step 7/8: Mapping lines to accounts"))
     rows = []
     for i in items:
         mapping_row = account_for(i)
@@ -502,8 +647,14 @@ def execute(pdf_file):
             print(f"   ⚠ no account for line: {i.get('description')}")
         rows.append({**info, "description": i.get("description", ""), **account_columns(mapping_row),
                      "value": num(i.get("value"))})
+    main_rows = list(rows)                           # one row per item, same order as items
     if vat:
         rows.append({**info, "description": "الضريبة", **account_columns(vat_row()),
                      "value": vat})
-    progress(7, _("Done"))
-    return rows
+
+    progress(7, _("Step 8/8: Checking other invoices in the PDF for VAT"))
+    attachment_vat = (attachment_vat_rows(pages, info, known_trn, items, main_rows)
+                      if len(pages) > 2 else [])     # pages has 2 entries per page -> more than 1 page
+
+    progress(8, _("Done"))
+    return rows, attachment_vat
