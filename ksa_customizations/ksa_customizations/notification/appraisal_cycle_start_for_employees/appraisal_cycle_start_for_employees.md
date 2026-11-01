@@ -5,11 +5,10 @@
 <p>You have 48 hours to complete your self-assessment and submit to your direct manager. Deadline: {{ frappe.utils.add_days(frappe.utils.today(), 2) }}</p>
 
 <p>What you need to do:<br>
-1. Log in to the HR system: {{ frappe.utils.get_url() }}<br>
-2. Go to My Appraisal → {{ doc.appraisal_cycle }}<br>
-3. Review your KPIs and enter your self-score for each one<br>
-4. Add a short comment per score — be specific, use actual numbers<br>
-5. Click Submit — your direct manager is notified immediately</p>
+1. Open the following Link: {{  frappe.utils.get_link_to_form("Appraisal", doc.name) }}<br>
+2. Review your KPIs and enter your self-score for each one<br>
+3. Add a short comment per score — be specific, use actual numbers<br>
+4. Click Submit — your direct manager is notified immediately</p>
 
 <p>Your KPIs this quarter:<br>
 {% for kpi in frappe.db.get_list("Goal", {"appraisal_cycle": doc.appraisal_cycle, "employee": doc.employee, "is_group":["!=", 1]}, ["goal_name", "kra", "progress"]) %}
@@ -36,11 +35,10 @@ Questions? hashim@arabiantires.com</p>
 <p>لديك مدة ٤٨ ساعة لاستكمال التقييم وإرساله إلى مديرك المباشر. الموعد النهائي: {{ frappe.utils.add_days(frappe.utils.today(), 2) }}.</p>
 
 <p>خطوات الإنجاز:<br>
-١. سجّل دخولك إلى نظام الموارد البشرية: {{ frappe.utils.get_url() }}<br>
-٢. انتقل إلى: تقييمي &larr; {{ doc.appraisal_cycle }}<br>
-٣. راجع مؤشرات أدائك وأدخل تقييمك لكل مؤشر<br>
-٤. أضف تعليقاً موجزاً على كل درجة — استند إلى الأرقام الفعلية<br>
-٥. أرسل التقييم — سيُخطَر مديرك المباشر فور إرسالك</p>
+1. قم بالدخول علي الرابط التالي: {{  frappe.utils.get_link_to_form("Appraisal", doc.name) }}<br>
+2. راجع مؤشرات أدائك وأدخل تقييمك لكل مؤشر<br>
+3. أضف تعليقاً موجزاً على كل درجة — استند إلى الأرقام الفعلية<br>
+4. أرسل التقييم — سيُخطَر مديرك المباشر فور إرسالك</p>
 
 <p>مؤشراتك هذا الربع:<br>
 {% for kpi in frappe.db.get_list("Goal", {"appraisal_cycle": doc.appraisal_cycle, "employee": doc.employee}) %}

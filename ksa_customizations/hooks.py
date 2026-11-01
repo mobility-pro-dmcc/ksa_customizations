@@ -168,10 +168,6 @@ doc_events = {
     "Customer": {
         "on_update": "ksa_customizations.server_script.customer.on_update",
     },
-    "Appraisal": {
-        "validate": "ksa_customizations.server_script.appraisal.fill_appraisal_from_goal_template",
-        "after_insert": "ksa_customizations.server_script.appraisal.create_goals"
-    },
     "Goal": {
         "before_save": "ksa_customizations.server_script.goal.before_save"
     },

@@ -11,7 +11,7 @@
  "filters": [],
  "idx": 0,
  "is_standard": "Yes",
- "json": "{\"filters\":[],\"fields\":[[\"name\",\"Goal\"],[\"docstatus\",\"Goal\"],[\"goal_name_ar\",\"Goal\"],[\"expected_target_amount\",\"Goal\"],[\"actual_target_amount\",\"Goal\"],[\"employee_name\",\"Goal\"],[\"status\",\"Goal\"],[\"start_date\",\"Goal\"],[\"end_date\",\"Goal\"]],\"order_by\":\"`tabGoal`.`creation` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":120,\"goal_name_ar\":120,\"expected_target_amount\":120,\"actual_target_amount\":120,\"employee_name\":120,\"status\":120,\"start_date\":120,\"end_date\":120},\"group_by\":null}",
+ "json": "{\"filters\":[],\"fields\":[[\"name\",\"Goal\"],[\"docstatus\",\"Goal\"],[\"goal_name_ar\",\"Goal\"],[\"progress\",\"Goal\"],[\"expected_target_amount\",\"Goal\"],[\"actual_target_amount\",\"Goal\"],[\"employee_name\",\"Goal\"],[\"status\",\"Goal\"],[\"start_date\",\"Goal\"],[\"end_date\",\"Goal\"]],\"order_by\":\"`tabGoal`.`creation` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":120,\"goal_name_ar\":120,\"expected_target_amount\":120,\"actual_target_amount\":120,\"employee_name\":120,\"status\":120,\"start_date\":120,\"end_date\":120},\"group_by\":null}",
  "letter_head": null,
  "modified": "2026-10-27 14:29:09.201893",
  "modified_by": "Administrator",
