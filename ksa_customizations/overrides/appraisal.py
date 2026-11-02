@@ -122,14 +122,19 @@ class CustomAppraisal(Appraisal):
         return self
 
     def set_goal_score_with_goal_template(self, update=False):
-        # Initialize DocTypes outside the loop for better performance
         Goal = frappe.qb.DocType("Goal")
         GoalTemplateKRA = frappe.qb.DocType("Goal Template KRA")
         GoalTemplateDetail = frappe.qb.DocType("Goal Template Detail")
-        GoalTemplate = frappe.qb.DocType("Goal Template")
+
+        # Employee's goal template first, fall back to the designation's
+        goal_template = (
+            frappe.db.get_value("Employee", self.employee, "goal_template")
+            or frappe.db.get_value("Designation", self.designation, "goal_template")
+        )
+        if not goal_template:
+            frappe.throw(f"Please set Goal Template in Employee {self.employee} or Designation {self.designation}")
 
         for kra in self.appraisal_kra:
-            # 1. Subquery to find parent goal names
             parent_goal_names = (
                 frappe.qb.from_(Goal)
                 .select(Goal.name)
@@ -138,20 +143,17 @@ class CustomAppraisal(Appraisal):
                     & (Goal.appraisal_cycle == self.appraisal_cycle)
                 )
             )
-            
-            # 2. Main query incorporating grouping and your math formula
+
             query_result = (
                 frappe.qb.from_(Goal)
-                .left_join(GoalTemplate)
-                .on(GoalTemplate.designation == self.designation)
                 .left_join(GoalTemplateKRA)
-                .on((GoalTemplateKRA.kra == Goal.kra) & (GoalTemplateKRA.parent == GoalTemplate.name))
+                .on((GoalTemplateKRA.kra == Goal.kra) & (GoalTemplateKRA.parent == goal_template))
                 .left_join(GoalTemplateDetail)
-                .on((GoalTemplateDetail.parent == GoalTemplate.name) & (GoalTemplateDetail.goal == Goal.goal_name))
+                .on((GoalTemplateDetail.parent == goal_template) & (GoalTemplateDetail.goal == Goal.goal_name))
                 .select(
-                    Count(Goal.name).as_("total_goals"),
-                    Sum(Goal.progress * GoalTemplateDetail.weight * GoalTemplateKRA.weight / 10000).as_("total_weighted_progress"),
-                    Sum(Goal.progress * GoalTemplateDetail.weight/ 100).as_("total_goal_waighted_progress")
+                    frappe.qb.functions("COUNT", Goal.name).as_("total_goals"),
+                    frappe.qb.functions("SUM", Goal.progress * GoalTemplateDetail.weight * GoalTemplateKRA.weight / 10000).as_("total_weighted_progress"),
+                    frappe.qb.functions("SUM", Goal.progress * GoalTemplateDetail.weight / 100).as_("total_goal_waighted_progress")
                 )
                 .where(
                     (Goal.kra == kra.kra)
@@ -162,7 +164,7 @@ class CustomAppraisal(Appraisal):
                 )
                 .groupby(Goal.kra)
             ).run(as_dict=True)
-            print(query_result)
+
             if query_result:
                 total_goal_completion = query_result[0].get("total_goal_waighted_progress") or 0
                 total_weighted_progress = query_result[0].get("total_weighted_progress") or 0
