@@ -1,4 +1,4 @@
-import base64, io, json, re
+import base64, io, json, re, unicodedata
 
 import anthropic
 import frappe
@@ -131,7 +131,7 @@ def account_lines():
 
 def build_prompt():
     field_lines = "\n".join(f"- {name}: {desc}." for name, desc in FIELDS.items())
-    schema = {**{name: "" for name in FIELDS},
+    schema = {"document_type": "invoice", **{name: "" for name in FIELDS},
               "vat_numbers": [{"number": "", "company": "", "side": "seller or customer"}],
               "items": [{"description": "", "value": 0, "vat_rate": 0, "line_account": "", "references": []}],
               "vat": 0, "vat_percent": 0, "taxable_amount": 0, "total_after_vat": 0}
@@ -146,6 +146,12 @@ def build_prompt():
 2. Take every value from the MAIN document only. Exception — these fields may be taken from an attachment
    if the main document does not show them: {attach}.
    NEVER take items or VAT from an attachment.
+3. document_type: the type of PAGE 1 only — exactly one word, "invoice" or "customs_declaration".
+   "invoice" if page 1 is an invoice / tax invoice / credit note / debit note (any customs declaration on
+   later pages does not matter).
+   "customs_declaration" if page 1 is a customs declaration (بيان جمركي / بيان الإستيراد /
+   التصريح و طلب التحضير و المعاينة / Custom Declaration). In that case page 1 is read separately:
+   leave the other fields "" and items [].
 
 Fields:
 {field_lines}
@@ -416,6 +422,114 @@ def attachment_vat_rows(pages, info, known_trn, items, main_rows):
     return rows
 
 
+# ── Customs declaration as the main document ────────────────────────────────
+# When the PDF has no invoice but a customs declaration (بيان جمركي), one row is made from "رسوم قطعية".
+CUSTOMS_ACCOUNT = "هيئة الزكاة والضريبة والجمارك"   # supplier name for declarations ("" = the customs office printed)
+CUSTOMS_DESCRIPTION = "رسوم قطعية"
+CUSTOMS_SPLIT_VAT = True       # True: if the declaration has VAT, the row = رسوم قطعية − VAT and VAT gets its own row
+
+
+def customs_prompt():
+    schema = {"customs_office": "", "declaration_no": "", "declaration_date": "", "bill_of_lading": "",
+              "importer": "", "importer_vat": "", "final_fees": 0, "vat": 0, "line_account": ""}
+    return f"""This page is a Saudi CUSTOMS DECLARATION (بيان جمركي / بيان الإستيراد /
+التصريح و طلب التحضير و المعاينة / Custom Declaration). Read ONLY this page and return:
+- customs_office: the customs office in the title (e.g. "جمرك ميناء جده الاسلامي").
+- declaration_no: رقم البيان / Dec No (e.g. 773325). NOT الرقم الموحد, the barcode, الرقم الإستدلالي or رقم التقرير.
+- declaration_date: تاريخ البيان / Dec Date as YYYY-MM-DD in GREGORIAN. It is often printed in Hijri (1448-03-16):
+  if the same Hijri date is printed with a Gregorian date anywhere on the page (e.g. footer
+  "1448-03-16 هـ 2026-08-29 م"), return that Gregorian date; otherwise return the Hijri date as printed.
+- bill_of_lading: رقم البوليصة / B/L (e.g. A2844003QGD). NOT a container number (رقم الحاوية) or إذن التسليم.
+- importer: the importer COMPANY (اسم المستورد / Importer), as printed. Never the clearing agent (اسم المخلص).
+- importer_vat: the number after "الرقم الضريبي" / TIN / VAT, digits exactly as printed (it may be 10 digits).
+- final_fees: the amount in the box "رسوم قطعية" (final fees) = "إجمالي الرسوم / قطعي".
+  NOT "رسوم مؤمنة" (guarantee), NOT "الرسوم الجمركية" alone, NOT the goods value.
+  Example: رسوم قطعية 19,725.27 | رسوم مؤمنة 0.00 | الرسوم الجمركية 19,225.27 | رسوم أخرى 500.00 -> 19725.27.
+- vat: the amount next to "ضريبة القيمة المضافة" in the fees box (الرســـوم). 0 if 0 or not printed.
+- line_account: the expense account for these fees, from this list ONLY (English name exactly);
+  "رسوم قطعية" / "الرسوم الجمركية" / Customs Duty -> Customs Duties. "" if none fits:
+{account_lines()}
+
+Numbers: plain, no separators. IDs: uppercase, no spaces, dashes or slashes. Never invent a value: use "".
+Return raw JSON only, exactly in this shape:
+{json.dumps(schema, ensure_ascii=False)}
+"""
+
+
+def looks_like_customs(items):
+    """True if the invoice lines read are really a customs declaration's fees box (رسوم قطعية / رسوم مؤمنة)."""
+    text = " ".join(normalize(i.get("description")) for i in items or [])
+    return "قطعي" in text or "مومنه" in normalize(text.replace("ؤ", "و"))
+
+
+def page1_kind(path):
+    """Type of page 1 from its text: "invoice", "customs_declaration", or "" (scan / no text / not sure)."""
+    try:
+        pdf = pdfium.PdfDocument(str(path))
+        text = normalize(unicodedata.normalize("NFKC", pdf[0].get_textpage().get_text_range()))
+        pdf.close()
+    except Exception:
+        return ""
+    words = set(re.findall(r"\w+", text))
+    if ("ضريبيه" in words and "فاتوره" in words) or any(w in text for w in ("tax invoice", "credit note", "debit note")):
+        return "invoice"
+    if "قطعيه" in words and "البيان" in words:                         # رسوم قطعية + رقم البيان
+        return "customs_declaration"
+    return ""
+
+
+def to_gregorian(date):
+    """'1448-03-16' (Hijri) -> '2026-08-29'. Gregorian dates are returned unchanged.
+    Needs `pip install hijridate`; without it the Hijri date is kept."""
+    m = re.fullmatch(r"(1[34]\d\d)[-/](\d{1,2})[-/](\d{1,2})", as_text(date))
+    if not m:
+        return as_text(date)
+    try:
+        from hijridate import Hijri
+        return Hijri(*map(int, m.groups())).to_gregorian().isoformat()
+    except Exception as e:
+        print(f"   ⚠ Hijri date {date} kept as is ({e})")
+        return as_text(date)
+
+
+def customs_rows(pages, known_trn):
+    """Page 1 is a customs declaration -> the rows: one row "رسوم قطعية" (+ one VAT row if it has VAT).
+    None if رسوم قطعية is not found."""
+    try:
+        d = ask(pages, customs_prompt())
+    except Exception as e:
+        print("   customs declaration read error:", e)
+        return None
+    fees, vat = num(d.get("final_fees")), num(d.get("vat"))
+    if fees <= 0:
+        print("   ⚠ رسوم قطعية not found in:", d)
+        return None
+    if not CUSTOMS_SPLIT_VAT:
+        vat = 0
+
+    account = CUSTOMS_ACCOUNT or as_text(d.get("customs_office"))
+    importer = as_text(d.get("importer"))
+    trn = clean_id(d.get("importer_vat"))
+    if not is_vat_number(trn):
+        tin = trn
+        trn = known_trn.get(normalize(importer), "")
+        if not trn and re.fullmatch(r"3\d{9}", tin):        # 10-digit TIN -> VAT number = TIN + "00003"
+            trn = tin + "00003"
+            print(f"   bill_TRN built from TIN {tin}: {trn}")
+    info = {"account": account, "invoice_no": clean_id(d.get("declaration_no")),
+            "invoice_date": to_gregorian(d.get("declaration_date")),
+            "sell_trn": known_trn.get(normalize(account), ""),
+            "bill_of_lading": clean_bl(d.get("bill_of_lading")), "bill_name": importer, "bill_TRN": trn}
+
+    item = {"description": CUSTOMS_DESCRIPTION, "line_account": d.get("line_account")}
+    rows = [{**info, "description": CUSTOMS_DESCRIPTION, **account_columns(account_for(item)),
+             "value": round(fees - vat, 2)}]
+    if vat:
+        rows.append({**info, "description": "الضريبة", **account_columns(vat_row()), "value": vat})
+    print(f"   customs declaration {info['invoice_no']}: رسوم قطعية {fees:,.2f}, VAT {vat:,.2f}")
+    return rows
+
+
 def pdf_pages(path):
     pdf = pdfium.PdfDocument(str(path))
     content = []
@@ -605,6 +719,22 @@ def execute(pdf_file):
                 data["items"] = retry["items"]
     except Exception as e:
         frappe.throw(f"Could not read the PDF: {e}")
+
+    # ── Page 1 is a customs declaration (like s.pdf) -> rows = one row from "رسوم قطعية" ──
+    # Only PAGE 1 decides. Page 1 = VAT invoice -> nothing changes, the code below runs as before.
+    from_text = page1_kind(pdf_file)                 # from the page text (PDFs with text); "" for scans
+    page1 = from_text or as_text(data.get("document_type")).lower()
+    if looks_like_customs(data.get("items")):        # the lines read are a declaration's fees box
+        page1 = "customs_declaration"
+    print(f"   page 1 = {page1 or 'invoice'} (decided by {'page text' if from_text else 'AI'})")
+    if page1 == "customs_declaration":
+        progress(3, _("Step 4/8: Reading the customs declaration on page 1"))
+        known_trn = load_known_trn()
+        rows = customs_rows(pages[:2], known_trn) or customs_rows(pages[:2], known_trn)   # page 1 only, one retry
+        if not rows:
+            frappe.throw(_("Page 1 is a customs declaration, but رسوم قطعية could not be read. Please try again."))
+        progress(8, _("Done"))
+        return rows, []
 
     progress(3, _("Step 4/8: Cleaning extracted fields and VAT numbers"))
     info = {name: clean_id(data.get(name)) if name in TEXT_FIELDS else as_text(data.get(name))
