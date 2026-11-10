@@ -263,7 +263,9 @@ def landed_cost_remark(invoice, purchase_receipt, accounts, main_invoice_no=None
         details.append(_("Seller: {0}").format(invoice["seller_name"]))
     if invoice.get("invoice_date"):
         details.append(_("Date: {0}").format(invoice["invoice_date"]))
-    details.append(_("Purchase Receipt: {0}").format(purchase_receipt))
+    pr_title = frappe.db.get_value("Purchase Receipt", purchase_receipt, "title")
+    details.append(_("Purchase Receipt: {0}").format(
+        f"{purchase_receipt} ({pr_title})" if pr_title and pr_title != purchase_receipt else purchase_receipt))
     if main_invoice_no is not None:
         details.append(_("Included in invoice {0}").format(main_invoice_no or "-"))
 
