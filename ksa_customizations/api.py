@@ -174,7 +174,8 @@ def create_landed_cost_journal_entry(purchase_receipt, accounts, file_url=None, 
     party_name / party_tax_id come from the Vendor whose vendor_tax_id matches the seller's VAT number.
     The invoice fields come from the server cache filled by upload_landed_cost_file.
 
-    accounts: list of {account, account_ar, debit, credit} (description is ignored).
+    accounts: list of {account, account_ar, debit, credit, description}; the descriptions go only into the
+        remark, not into the account lines.
     attachment_index: set for the VAT entry of another invoice inside the PDF (returned_vats[index]);
         its own invoice number, date and seller are used instead of the main invoice's.
     """
@@ -183,7 +184,9 @@ def create_landed_cost_journal_entry(purchase_receipt, accounts, file_url=None, 
         frappe.throw(_("There are no accounting entries to post"))
 
     invoice = (frappe.cache.get_value(upload_cache_key(file_url)) if file_url else None) or {}
-    if attachment_index not in (None, ""):
+    main_invoice_no = invoice.get("invoice_no")
+    is_vat_entry = attachment_index not in (None, "")
+    if is_vat_entry:
         attachments = invoice.get("attachments") or []
         index = frappe.utils.cint(attachment_index)
         invoice = attachments[index] if 0 <= index < len(attachments) else {}
@@ -212,8 +215,10 @@ def create_landed_cost_journal_entry(purchase_receipt, accounts, file_url=None, 
         je.party_name = vendor.name
         je.party_tax_id = vendor.vendor_tax_id
 
+    je.user_remark = landed_cost_remark(invoice, purchase_receipt, accounts,
+                                        main_invoice_no if is_vat_entry else None)
+
     for row in accounts:
-        category = (row.get("account_ar") or "").strip()
         line = {
             "account": row.get("account"),
             "debit_in_account_currency": flt(row.get("debit")),
@@ -226,8 +231,8 @@ def create_landed_cost_journal_entry(purchase_receipt, accounts, file_url=None, 
 
     je.insert()
 
-    # Attach the processed invoice (same file, linked to the journal entry); not for the VAT entries
-    if file_url and attachment_index in (None, ""):
+    # Attach the processed invoice (same file, linked to the journal entry)
+    if file_url:
         source = frappe.db.get_value("File", {"file_url": file_url}, ["file_name", "is_private"], as_dict=True)
         if source:
             frappe.get_doc({
@@ -246,6 +251,26 @@ def create_landed_cost_journal_entry(purchase_receipt, accounts, file_url=None, 
             "bill_no": je.bill_no, "bill_date": je.bill_date,
             "seller_name": seller_name, "vendor_name": vendor_name, "vendor_name_score": vendor_name_score,
             "vendor_name_matches": vendor_name_score is None or vendor_name_score >= BUYER_NAME_MIN_SCORE * 100}
+
+
+def landed_cost_remark(invoice, purchase_receipt, accounts, main_invoice_no=None):
+    """Remark of a landed cost journal entry: the invoice details, then the descriptions of its lines.
+    main_invoice_no is set for a VAT entry (another invoice inside the main invoice's PDF)."""
+    title = _("VAT of invoice {0}").format(invoice.get("invoice_no") or "-") if main_invoice_no is not None \
+        else _("Landed cost invoice {0}").format(invoice.get("invoice_no") or "-")
+    details = [title]
+    if invoice.get("seller_name"):
+        details.append(_("Seller: {0}").format(invoice["seller_name"]))
+    if invoice.get("invoice_date"):
+        details.append(_("Date: {0}").format(invoice["invoice_date"]))
+    details.append(_("Purchase Receipt: {0}").format(purchase_receipt))
+    if main_invoice_no is not None:
+        details.append(_("Included in invoice {0}").format(main_invoice_no or "-"))
+
+    descriptions = list(dict.fromkeys(
+        (row.get("description") or "").strip() for row in accounts if (row.get("description") or "").strip()
+    ))
+    return "\n".join([" - ".join(details), *descriptions])
 
 
 def get_old_landed_cost_vouchers(purchase_receipt):

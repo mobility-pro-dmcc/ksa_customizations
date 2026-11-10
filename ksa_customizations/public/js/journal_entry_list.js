@@ -171,6 +171,7 @@ function table_accounts(dialog, fieldname) {
     return dialog.fields_dict[fieldname].df.data.map((row) => ({
         account: row.account,
         account_ar: row.account_ar,
+        description: row.description || "",
         debit: flt(row.debit),
         credit: flt(row.credit),
     }));
@@ -235,7 +236,6 @@ async function create_landed_cost_entries(result, tables) {
                     purchase_receipt: result.purchase_receipt,
                     accounts: table_accounts(table.dialog, table.fieldname),
                     file_url: result.file_url,
-                    ...(table.index === null ? {} : { attachment_index: table.index }),
                 },
             });
             if (!r || r.exc || !r.message) {
