@@ -49,7 +49,6 @@ class TireClaimReconciliation(Document):
 				"posting_date": today(),
 				"customer": self.customer,
 				"company": company,
-				"return_against": self.sales_invoice,
 				"credit_adjustment_against": self.sales_invoice,
 				"custom_return_reason": self.reason,
 				"custom_note_reason": self.reason,
